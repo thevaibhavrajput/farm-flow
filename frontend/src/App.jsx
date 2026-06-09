@@ -7,6 +7,7 @@ import { loadCurrentUser } from './store/slices/authSlice.js';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { SocketProvider } from './context/SocketContext.jsx';
 import AppRoutes from './routes/AppRoutes.jsx';
+import { ToastProvider } from './components/layout/Toast.jsx';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -30,11 +31,13 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <SocketProvider>
-            <BrowserRouter>
-              <SessionLoader>
-                <AppRoutes />
-              </SessionLoader>
-            </BrowserRouter>
+            <ToastProvider>
+              <BrowserRouter>
+                <SessionLoader>
+                  <AppRoutes />
+                </SessionLoader>
+              </BrowserRouter>
+            </ToastProvider>
           </SocketProvider>
         </ThemeProvider>
       </QueryClientProvider>

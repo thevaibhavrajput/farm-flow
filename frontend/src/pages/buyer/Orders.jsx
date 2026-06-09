@@ -5,9 +5,12 @@ import api from '../../api/api.js';
 import { Eye, FileDown, XCircle, RefreshCw } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar.jsx';
 import Sidebar from '../../components/layout/Sidebar.jsx';
+import { useToast } from '../../components/layout/Toast.jsx';
 
 const BuyerOrders = () => {
   const queryClient = useQueryClient();
+   const showToast   = useToast();
+   const [downloadingInvoice, setDownloadingInvoice] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   // Fetch Buyer Orders
@@ -30,22 +33,48 @@ const BuyerOrders = () => {
     },
   });
 
-  const handleDownloadInvoice = async (id, orderNumber) => {
-    try {
-      const response = await api.get(`/orders/${id}/invoice`, { responseType: 'blob' });
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `invoice-${orderNumber}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      alert('Invoice download failed');
-    }
-  };
+ const handleDownloadInvoice = async (id, orderNumber) => {
+  try {
+    setDownloadingInvoice(id);
 
+    const response = await api.get(`/orders/${id}/invoice`, {
+      responseType: 'blob',
+    });
+
+    const blob = new Blob([response.data], {
+      type: 'application/pdf',
+    });
+
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `invoice-${orderNumber}.pdf`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(url);
+
+    showToast({
+      title: 'Invoice Downloaded',
+      sub: `Invoice #${orderNumber} downloaded successfully`,
+      variant: 'success',
+      duration: 3000,
+    });
+
+  } catch (error) {
+    showToast({
+      title: 'Download Failed',
+      sub: error.response?.data?.message || 'Failed to download invoice',
+      variant: 'error',
+      duration: 3000,
+    });
+  } finally {
+    setDownloadingInvoice(null);
+  }
+};
   return (
     <div className="app-container">
       <Sidebar />
@@ -100,9 +129,23 @@ const BuyerOrders = () => {
                               <button className="btn btn-outline-success btn-sm d-flex align-items-center gap-1" onClick={() => setSelectedOrder(order)}>
                                 <Eye size={14} /> Details & Track
                               </button>
-                              <button className="btn btn-outline-dark btn-sm" onClick={() => handleDownloadInvoice(order._id, order.orderNumber)}>
-                                <FileDown size={14} />
-                              </button>
+                              <button
+  className="btn btn-outline-dark btn-sm"
+  onClick={() => handleDownloadInvoice(order._id, order.orderNumber)}
+  disabled={downloadingInvoice === order._id}
+>
+  {downloadingInvoice === order._id ? (
+    <>
+      <span
+        className="spinner-border spinner-border-sm me-1"
+        role="status"
+      />
+      Downloading...
+    </>
+  ) : (
+    <FileDown size={14} />
+  )}
+</button>
                             </div>
                           </td>
                         </tr>
@@ -141,7 +184,7 @@ const BuyerOrders = () => {
                               )}
                             </div>
                             <div>
-                              <div className="fw-bold text-capitalize text-dark" style={{ fontSize: '14px' }}>
+                              <div className="fw-bold text-capitalize " style={{ fontSize: '14px' }}>
                                 {t.status.replace('_', ' ')}
                               </div>
                               <div className="text-muted small">{t.description}</div>

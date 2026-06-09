@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Leaf, Mail, Lock, User, Phone, Store, UserPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+
 const Register = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -20,6 +21,7 @@ const Register = () => {
   // Local validation errors
   const [localErrors, setLocalErrors] = useState({});
 
+  
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error, validationErrors = [] } = useSelector((state) => state.auth);

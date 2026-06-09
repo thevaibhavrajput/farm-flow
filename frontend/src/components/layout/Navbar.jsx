@@ -30,7 +30,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar navbar-expand-lg glass-panel px-4 py-2 mb-4 sticky-top">
+    <nav className="navbar navbar-expand-lg glass-panel px-4 py-2 mb-4 ">
       <div className="container-fluid d-flex align-items-center justify-content-between">
         <div className="d-flex align-items-center">
           <button

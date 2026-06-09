@@ -311,3 +311,7 @@ body {
   to { transform: rotate(360deg); }
 }
 
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.8);
+}
+

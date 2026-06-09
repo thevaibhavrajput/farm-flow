@@ -5,11 +5,14 @@ import api from '../../api/api.js';
 import { User, Store, MapPin, Plus, Trash2, Save } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar.jsx';
 import Sidebar from '../../components/layout/Sidebar.jsx';
+import { useToast } from '../../components/layout/Toast.jsx';
 
 const Profile = () => {
   const dispatch = useDispatch();
+    const showToast   = useToast();
   const { user } = useSelector((state) => state.auth);
-
+const [removingAddress, setRemovingAddress] = useState(null);
+const [removingRow, setRemovingRow] = useState(null);
   // Profile forms
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
@@ -23,63 +26,121 @@ const Profile = () => {
   const [state, setState] = useState('');
   const [postalCode, setPostalCode] = useState('');
 
-  const handleUpdateProfile = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const response = await api.put('/users/profile', {
-        firstName,
-        lastName,
-        phone,
-        businessInfo: {
-          businessName,
-        },
+ const handleUpdateProfile = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    const response = await api.put('/users/profile', {
+      firstName,
+      lastName,
+      phone,
+      businessInfo: {
+        businessName,
+      },
+    });
+
+    if (response.data.success) {
+      dispatch(updateUserProfile(response.data.data.user));
+
+      showToast({
+        title: 'Profile Updated!',
+        sub: 'Your profile has been updated successfully.',
+        variant: 'success',
+        duration: 3000,
       });
-      if (response.data.success) {
-        dispatch(updateUserProfile(response.data.data.user));
-        alert('Profile updated successfully!');
-      }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update profile');
-    } finally {
-      setLoading(false);
     }
-  };
+
+  } catch (err) {
+    console.error(err);
+
+    showToast({
+      title: 'Update Failed',
+      sub: err.response?.data?.message || 'Failed to update profile',
+      variant: 'error',
+      duration: 3000,
+    });
+
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleAddAddress = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await api.post('/users/addresses', {
-        street,
-        city,
-        state,
-        postalCode,
-        label: 'Work',
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    const response = await api.post('/users/addresses', {
+      street,
+      city,
+      state,
+      postalCode,
+      label: 'Work',
+    });
+
+    if (response.data.success) {
+      dispatch(updateUserProfile(response.data.data.user));
+
+      showToast({
+        title: 'Address Added!',
+        sub: 'Your address has been added successfully.',
+        variant: 'success',
+        duration: 3000,
       });
-      if (response.data.success) {
-        dispatch(updateUserProfile(response.data.data.user));
-        alert('Address added successfully!');
-        setStreet('');
-        setCity('');
-        setState('');
-        setPostalCode('');
-      }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add address');
+
+      setStreet('');
+      setCity('');
+      setState('');
+      setPostalCode('');
     }
-  };
+
+  } catch (err) {
+    console.error(err);
+
+    showToast({
+      title: 'Failed to Add Address',
+      sub: err.response?.data?.message || 'Please try again',
+      variant: 'error',
+      duration: 3000,
+    });
+
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleRemoveAddress = async (addressId) => {
-    try {
-      const response = await api.delete(`/users/addresses/${addressId}`);
-      if (response.data.success) {
-        dispatch(updateUserProfile(response.data.data.user));
-        alert('Address removed successfully!');
-      }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to remove address');
+  try {
+    setRemovingAddress(addressId);
+
+    const response = await api.delete(`/users/addresses/${addressId}`);
+
+    if (response.data.success) {
+      dispatch(updateUserProfile(response.data.data.user));
+
+      showToast({
+        title: 'Address Removed!',
+        sub: 'Address removed successfully.',
+        variant: 'success',
+        duration: 3000,
+      });
     }
-  };
+
+  } catch (err) {
+    console.error(err);
+
+    showToast({
+      title: 'Remove Failed',
+      sub: err.response?.data?.message || 'Failed to remove address',
+      variant: 'error',
+      duration: 3000,
+    });
+
+  } finally {
+    setRemovingAddress(null);
+  }
+};
 
   return (
     <div className="app-container">
@@ -115,9 +176,27 @@ const Profile = () => {
                   <label className="form-label fw-semibold ">Business Name</label>
                   <input type="text" className="form-control" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
                 </div>
-                <button type="submit" className="btn btn-primary-farm d-flex align-items-center gap-2" disabled={loading}>
-                  <Save size={16} /> Save Profiles
-                </button>
+                <button
+  type="submit"
+  className="btn btn-primary-farm d-flex align-items-center gap-2"
+  disabled={loading}
+>
+  {loading ? (
+    <>
+      <span
+        className="spinner-border spinner-border-sm"
+        role="status"
+        aria-hidden="true"
+      />
+      Saving...
+    </>
+  ) : (
+    <>
+      <Save size={16} />
+      Save Profile
+    </>
+  )}
+</button>
               </form>
             </div>
 
@@ -160,9 +239,27 @@ const Profile = () => {
                       <input type="text" className="form-control form-control-sm" placeholder="Postal Code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} required />
                     </div>
                   </div>
-                  <button type="submit" className="btn btn-primary-farm btn-sm d-flex align-items-center gap-1">
-                    <Plus size={16} /> Add Address
-                  </button>
+                  <button
+  type="submit"
+  className="btn btn-primary-farm btn-sm d-flex align-items-center gap-1"
+  disabled={loading}
+>
+  {loading ? (
+    <>
+      <span
+        className="spinner-border spinner-border-sm"
+        role="status"
+        aria-hidden="true"
+      />
+      Adding...
+    </>
+  ) : (
+    <>
+      <Plus size={16} />
+      Add Address
+    </>
+  )}
+</button>
                 </form>
               </div>
             </div>

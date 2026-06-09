@@ -5,6 +5,8 @@ import api from '../../api/api.js';
 import { Plus, Edit2, Trash2, Tag, Archive, IndianRupee, Check, X, Upload, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar.jsx';
 import Sidebar from '../../components/layout/Sidebar.jsx';
+import { useTheme } from '../../context/ThemeContext.jsx';
+import { Sun, Moon } from 'lucide-react';
 
 // Helper: current date parts
 const getCurrentDate = () => {
@@ -53,7 +55,8 @@ const SupplierInventory = () => {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-
+  
+  const { theme, toggleTheme } = useTheme();
   // Bulk Adder States
   const [showBulkAdd, setShowBulkAdd] = useState(false);
   const [bulkProducts, setBulkProducts] = useState([]);
@@ -287,6 +290,7 @@ const SupplierInventory = () => {
                               flexShrink: 0,
                             }}
                           >
+                             
                             <span style={{ fontSize: '20px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
                               {label.day}
                             </span>
@@ -294,6 +298,8 @@ const SupplierInventory = () => {
                               {label.month.slice(0, 3)}
                             </span>
                           </div>
+
+
 
                           {/* Weekday + full date text */}
                           <div style={{ lineHeight: 1.35 }}>
@@ -306,6 +312,7 @@ const SupplierInventory = () => {
 >
   {label.weekday}
 </div>
+
                             <div style={{ fontSize: '12px', color: '#8a9b8a', fontWeight: 500 }}>
                               {label.day} {label.month} {label.year}
                               <span
@@ -405,16 +412,16 @@ const SupplierInventory = () => {
                 </div>
                 <form onSubmit={handleSubmit} className="modal-body pt-3">
                   <div className="mb-3">
-                    <label className="form-label text-dark fw-semibold">Product Name</label>
+                    <label className="form-label  fw-semibold">Product Name</label>
                     <input type="text" className="form-control" placeholder="e.g. Tomatoes" value={name} onChange={(e) => setName(e.target.value)} required />
                   </div>
                   <div className="row g-3 mb-3">
                     <div className="col-sm-6">
-                      <label className="form-label text-dark fw-semibold">Price (₹)</label>
+                      <label className="form-label  fw-semibold">Price (₹)</label>
                       <input type="number" className="form-control" placeholder="50" value={price} onChange={(e) => setPrice(e.target.value)} required />
                     </div>
                     <div className="col-sm-6">
-                      <label className="form-label text-dark fw-semibold">Unit</label>
+                      <label className="form-label  fw-semibold">Unit</label>
                       <select className="form-select" value={unit} onChange={(e) => setUnit(e.target.value)}>
                         <option value="kg">Kg</option>
                         <option value="box">Box</option>
@@ -425,7 +432,7 @@ const SupplierInventory = () => {
                   </div>
                   <div className="row g-3 mb-3">
                     <div className="col-sm-6">
-                      <label className="form-label text-dark fw-semibold">Category</label>
+                      <label className="form-label  fw-semibold">Category</label>
                       <select className="form-select" value={category} onChange={(e) => setCategory(e.target.value)}>
                         {categories.map((c) => (
                           <option key={c._id} value={c._id}>{c.name}</option>
@@ -433,16 +440,16 @@ const SupplierInventory = () => {
                       </select>
                     </div>
                     <div className="col-sm-6">
-                      <label className="form-label text-dark fw-semibold">Stock Quantity</label>
+                      <label className="form-label  fw-semibold">Stock Quantity</label>
                       <input type="number" className="form-control" placeholder="100" value={stock} onChange={(e) => setStock(e.target.value)} required />
                     </div>
                   </div>
                   <div className="mb-3">
-                    <label className="form-label text-dark fw-semibold">Description</label>
+                    <label className="form-label  fw-semibold">Description</label>
                     <textarea className="form-control" rows="3" placeholder="Fresh organic quality..." value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
                   </div>
                   <div className="mb-4">
-                    <label className="form-label text-dark fw-semibold">Product Images</label>
+                    <label className="form-label  fw-semibold">Product Images</label>
                     <input type="file" className="form-control" multiple accept="image/*" onChange={(e) => setImageFiles(Array.from(e.target.files))} />
                   </div>
                   <div className="d-flex justify-content-end gap-2">
@@ -477,6 +484,13 @@ const SupplierInventory = () => {
               {/* Right: date pill + product count + close */}
               <div className="d-flex align-items-center gap-3">
 
+ <button
+      className="btn btn-outline-success border-0 rounded-circle p-2"
+      onClick={toggleTheme}
+      title="Toggle Theme"
+    >
+      {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+    </button>
                 {/* ✅ Date Display */}
                 <div
                   className="d-flex align-items-center gap-2 px-3 py-2"

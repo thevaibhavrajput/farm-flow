@@ -3,45 +3,89 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../api/api.js';
 import { Leaf, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useToast } from '../../components/layout/Toast.jsx';
 
 const VerifyOTP = () => {
   const location = useLocation();
+  const showToast   = useToast();
   const navigate = useNavigate();
   const [otp, setOtp] = useState('');
+  const [resending, setResending] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const email = location.state?.email || '';
 
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await api.post('/auth/verify-email', {
-        email,
-        otp,
-        purpose: 'email_verification',
+ const handleVerify = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError(null);
+
+  try {
+    const response = await api.post('/auth/verify-email', {
+      email,
+      otp,
+      purpose: 'email_verification',
+    });
+
+    if (response.data.success) {
+      showToast({
+        title: 'Email Verified!',
+        sub: 'Your account has been verified successfully.',
+        variant: 'success',
+        duration: 3000,
       });
-      if (response.data.success) {
-        alert('Email verified successfully! You can now log in.');
+
+      setTimeout(() => {
         navigate('/login');
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'OTP verification failed');
-    } finally {
-      setLoading(false);
+      }, 1000);
     }
-  };
+
+  } catch (err) {
+    const errorMessage =
+      err.response?.data?.message || 'OTP verification failed';
+
+    setError(errorMessage);
+
+    showToast({
+      title: 'Verification Failed',
+      sub: errorMessage,
+      variant: 'error',
+      duration: 3000,
+    });
+
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleResend = async () => {
-    try {
-      await api.post('/auth/resend-verification', { email });
-      alert('Verification OTP sent successfully!');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to resend OTP');
-    }
-  };
+  try {
+    setResending(true);
+
+    await api.post('/auth/resend-verification', { email });
+
+    showToast({
+      title: 'OTP Sent!',
+      sub: `Verification code sent to ${email}`,
+      variant: 'success',
+      duration: 3000,
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    showToast({
+      title: 'Failed to resend OTP',
+      sub: err.response?.data?.message || 'Please try again',
+      variant: 'error',
+      duration: 3000,
+    });
+
+  } finally {
+    setResending(false);
+  }
+};
 
   return (
     <div className="d-flex justify-content-center align-items-center min-vh-100 px-3">
@@ -89,11 +133,27 @@ const VerifyOTP = () => {
               </>
             )}
           </button>
+          
         </form>
 
-        <button onClick={handleResend} className="btn btn-link text-success text-decoration-none w-100 fw-bold">
-          Resend verification email
-        </button>
+        <button
+  onClick={handleResend}
+  disabled={resending}
+  style={{
+    background: resending
+      ? 'rgba(34,197,94,0.2)'
+      : 'linear-gradient(135deg,#22c55e,#16a34a)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '10px',
+    padding: '10px 18px',
+    cursor: resending ? 'not-allowed' : 'pointer',
+    fontWeight: 600,
+    opacity: resending ? 0.8 : 1,
+  }}
+>
+  {resending ? 'Sending...' : 'Resend OTP'}
+</button>
       </motion.div>
     </div>
   );

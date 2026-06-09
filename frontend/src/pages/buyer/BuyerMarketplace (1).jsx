@@ -3,13 +3,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import { addItemToCart } from '../../store/slices/cartSlice.js';
 import api from '../../api/api.js';
-import { Search, ShoppingCart, Sparkles, ChevronRight, Leaf, Apple, Salad, SlidersHorizontal, TrendingUp,ChevronLeft } from 'lucide-react';
+import { Search, ShoppingCart, Sparkles, ChevronRight, Leaf, Apple, Salad, SlidersHorizontal, TrendingUp } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar.jsx';
 import Sidebar from '../../components/layout/Sidebar.jsx';
 import { useToast } from '../../components/layout/Toast.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { useNavigate } from 'react-router-dom';
-
 
 /* ─── Theme token factory ───────────────────────────────────────────────
    Returns two token objects — one for dark, one for light — keyed by
@@ -203,7 +202,7 @@ const ProductCard = ({ p, onAdd, adding, t }) => {
       background: t.cardBg, borderRadius:20, overflow:'hidden',
       border:`1px solid ${t.borderDefault}`,
       boxShadow: t.cardShadow,
-      transition:'transform 0.22s ease',
+      transition:'transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease',
       cursor:'pointer', display:'flex', flexDirection:'column',
     }}
       onMouseEnter={e=>{ e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.boxShadow=t.cardHoverShadow; e.currentTarget.style.borderColor=t.borderHover; }}
@@ -244,7 +243,7 @@ const ProductCard = ({ p, onAdd, adding, t }) => {
             ) : (
               <span style={{ fontSize:18, fontWeight:800, color:t.textPrice }}>₹{p.price}</span>
             )}
-            <div style={{ fontSize:11,color:t.textMuted, marginTop:1 }}>per {p.unit} · Stock: {p.stock?.quantity}</div>
+            <div style={{ fontSize:11, color:t.textDisabled, marginTop:1 }}>per {p.unit} · Stock: {p.stock?.quantity}</div>
           </div>
 
           <button
@@ -257,7 +256,7 @@ const ProductCard = ({ p, onAdd, adding, t }) => {
               borderRadius:12, padding:'9px 16px', fontSize:13, fontWeight:700, cursor:'pointer',
               display:'flex', alignItems:'center', gap:5,
               boxShadow: adding===p._id ? 'none' : t.accentBtnShadow,
-              transition:'transform 0.18s ease', whiteSpace:'nowrap',
+              transition:'all 0.18s ease', whiteSpace:'nowrap',
             }}
             onMouseEnter={e=>{ if(adding!==p._id){ e.currentTarget.style.transform='scale(1.05)'; }}}
             onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}
@@ -274,14 +273,13 @@ const ProductCard = ({ p, onAdd, adding, t }) => {
 /* ─── Recommendation Chip ───────────────────────────────────────────── */
 const RecommendChip = ({ p, onAdd, t, isDark }) => (
   <div style={{
-    background: isDark ? 'rgba(10,20,14,0.45)' : '#ffffff', position: 'relative',
-    minHeight: 90,
+    background: isDark ? 'rgba(10,20,14,0.45)' : '#ffffff',
     backdropFilter: isDark ? 'blur(18px) saturate(180%)' : 'none',
     WebkitBackdropFilter: isDark ? 'blur(18px) saturate(180%)' : 'none',
     borderRadius:18, padding:'12px 14px', display:'flex', alignItems:'center', gap:12,
     border: isDark ? '1px solid rgba(74,222,128,0.18)' : '1px solid #e8f5e9',
     boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.06)' : '0 2px 10px rgba(0,0,0,0.05)',
-    minWidth:220, flexShrink:0, transition:'transform 0.2s ease',
+    minWidth:220, flexShrink:0, transition:'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
   }}
     onMouseEnter={e=>{ e.currentTarget.style.transform='translateY(-3px)'; }}
     onMouseLeave={e=>{ e.currentTarget.style.transform='translateY(0)'; }}
@@ -295,39 +293,20 @@ const RecommendChip = ({ p, onAdd, t, isDark }) => (
       <div style={{ fontWeight:700, fontSize:14, color:t.textPrimary, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{p.name}</div>
       <div style={{ fontSize:12, color:t.textPrice, fontWeight:600, marginBottom:6 }}>₹{p.price} / {p.unit}</div>
       <button
-  onClick={() => onAdd(p)}
-  style={{
-    position: 'absolute',
-    right: 14,
-    bottom: 12,
-
-    background: isDark ? 'rgba(34,197,94,0.12)' : '#f0fdf4',
-    color: t.accent,
-    border: isDark
-      ? '1px solid rgba(74,222,128,0.30)'
-      : '1.5px solid #bbf7d0',
-    borderRadius: 8,
-    padding: '4px 12px',
-    fontSize: 12,
-    fontWeight: 700,
-    cursor: 'pointer',
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.background = isDark
-      ? 'rgba(34,197,94,0.22)'
-      : '#dcfce7';
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.background = isDark
-      ? 'rgba(34,197,94,0.12)'
-      : '#f0fdf4';
-  }}
->
-  + Add
-</button>
+        onClick={()=>onAdd(p)}
+        style={{
+          background: isDark ? 'rgba(34,197,94,0.12)' : '#f0fdf4',
+          color: t.accent,
+          border: isDark ? '1px solid rgba(74,222,128,0.30)' : '1.5px solid #bbf7d0',
+          borderRadius:8, padding:'4px 12px', fontSize:12, fontWeight:700, cursor:'pointer', transition:'all 0.15s ease',
+        }}
+        onMouseEnter={e=>{ e.currentTarget.style.background = isDark ? 'rgba(34,197,94,0.22)' : '#dcfce7'; }}
+        onMouseLeave={e=>{ e.currentTarget.style.background = isDark ? 'rgba(34,197,94,0.12)' : '#f0fdf4'; }}
+      >+ Add</button>
     </div>
   </div>
 );
+
 /* ─── Main Component ────────────────────────────────────────────────── */
 const BuyerMarketplace = () => {
   const dispatch    = useDispatch();
@@ -337,8 +316,6 @@ const BuyerMarketplace = () => {
   const { theme }   = useTheme();                // ← reads the same context Navbar writes to
   const isDark      = theme === 'dark';
   const t           = getTokens(isDark);          // ← all colour decisions come from here
-
-    const recommendationRef = React.useRef(null);
 
   const [search,           setSearch]           = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -366,19 +343,6 @@ const BuyerMarketplace = () => {
       { _id: '64f0b2f384a56c001712aabe', name: 'Herbs' },
     ],
   });
-
-   const scrollRecommendations = () => {
-    recommendationRef.current?.scrollBy({
-      left: 320,
-      behavior: 'smooth',
-    });
-  };
-  const scrollRecommendationsLeft = () => {
-  recommendationRef.current?.scrollBy({
-    left: -320,
-    behavior: 'smooth',
-  });
-};
 
   const handleAddToCart = async (product) => {
     try {
@@ -411,7 +375,7 @@ const BuyerMarketplace = () => {
   return (
     <div className="app-container" style={{ colorScheme: t.colorScheme }}>
       <Sidebar />
-      <div className="main-content" style={{ position:'relative', background:t.pageBg, minHeight:'100vh' }}>
+      <div className="main-content" style={{ position:'relative', background:t.pageBg, minHeight:'100vh', transition:'background 0.3s ease' }}>
         <BotanicalBg isDark={isDark}/>
         {isDark && <AmbientOrbs/>}
         <Navbar/>
@@ -458,6 +422,7 @@ const BuyerMarketplace = () => {
                       borderRadius:14, border:`1px solid ${t.searchBorder}`,
                       fontSize:14, background:t.searchBg, color:t.searchColor,
                       outline:'none', backdropFilter:'blur(12px)',
+                      transition:'border-color 0.2s ease, background 0.2s ease',
                     }}
                     onFocus={e=>{ e.target.style.borderColor=t.searchFocusBorder; e.target.style.background=t.searchFocusBg; }}
                     onBlur={e=>{ e.target.style.borderColor=t.searchBorder; e.target.style.background=t.searchBg; }}
@@ -472,7 +437,7 @@ const BuyerMarketplace = () => {
             <button
               onClick={()=>setSelectedCategory('')}
               style={{
-                padding:'8px 18px', borderRadius:50, fontSize:13, fontWeight:600, cursor:'pointer',
+                padding:'8px 18px', borderRadius:50, fontSize:13, fontWeight:600, cursor:'pointer', transition:'all 0.15s ease',
                 border: selectedCategory==='' ? `1.5px solid ${t.accent}` : `1.5px solid ${t.pillBorder}`,
                 background: selectedCategory==='' ? (isDark?'rgba(34,197,94,0.12)':'#f0fdf4') : t.pillDefault,
                 color: selectedCategory==='' ? t.accent : t.pillText,
@@ -487,7 +452,7 @@ const BuyerMarketplace = () => {
                   key={c._id}
                   onClick={()=>setSelectedCategory(isActive?'':c._id)}
                   style={{
-                    padding:'8px 18px', borderRadius:50, fontSize:13, fontWeight:600, cursor:'pointer',
+                    padding:'8px 18px', borderRadius:50, fontSize:13, fontWeight:600, cursor:'pointer', transition:'all 0.15s ease',
                     border: isActive ? `1.5px solid ${m.border||t.accent}` : `1.5px solid ${t.pillBorder}`,
                     background: isActive ? (m.bg||'rgba(34,197,94,0.12)') : t.pillDefault,
                     color: isActive ? (m.color||t.accent) : t.pillText,
@@ -508,6 +473,7 @@ const BuyerMarketplace = () => {
                   border:`1.5px solid ${t.pillBorder}`, borderRadius:10, padding:'7px 12px',
                   fontSize:13, color:t.textMuted, background:t.pillDefault,
                   cursor:'pointer', outline:'none', colorScheme: t.selectScheme,
+                  transition:'all 0.2s ease',
                 }}
               >
                 <option value="default">Sort: Recommended</option>
@@ -561,109 +527,11 @@ const BuyerMarketplace = () => {
                     View all <ChevronRight size={14}/>
                   </button>
                 </div>
-                <div style={{ position: 'relative' }}>
-  <div
-    ref={recommendationRef}
-    style={{
-      display: 'flex',
-      gap: 12,
-      overflowX: 'auto',
-      scrollBehavior: 'smooth',
-    }}
-  >
-    {dashboardData.recommendations.map((p) => (
-      <RecommendChip
-        key={p._id}
-        p={p}
-        onAdd={handleAddToCart}
-        t={t}
-        isDark={isDark}
-      />
-    ))}
-  </div>
-
-  {/* Left Arrow */}
- <button
-  onClick={scrollRecommendationsLeft}
-  style={{
-    position: 'absolute',
-    left: 10,
-    top: '50%',
-    transform: 'translateY(-50%)',
-
-    width: 42,
-    height: 42,
-    borderRadius: '50%',
-
-    background: isDark
-      ? 'rgba(10,20,14,0.75)'
-      : 'rgba(255,255,255,0.95)',
-
-    border: isDark
-      ? '1px solid rgba(74,222,128,0.25)'
-      : '1px solid rgba(22,163,74,0.15)',
-
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-
-    color: t.accent,
-    cursor: 'pointer',
-
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-
-    boxShadow: isDark
-      ? '0 4px 20px rgba(0,0,0,0.45)'
-      : '0 4px 12px rgba(0,0,0,0.08)',
-
-    zIndex: 10,
-  }}
->
-  <ChevronLeft size={20} />
-</button>
-
-  {/* Right Arrow */}
-  <button
-  onClick={scrollRecommendations}
-  style={{
-    position: 'absolute',
-    right: 10,
-    top: '50%',
-    transform: 'translateY(-50%)',
-
-    width: 42,
-    height: 42,
-    borderRadius: '50%',
-
-    background: isDark
-      ? 'rgba(10,20,14,0.75)'
-      : 'rgba(255,255,255,0.95)',
-
-    border: isDark
-      ? '1px solid rgba(74,222,128,0.25)'
-      : '1px solid rgba(22,163,74,0.15)',
-
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-
-    color: t.accent,
-    cursor: 'pointer',
-
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-
-    boxShadow: isDark
-      ? '0 4px 20px rgba(0,0,0,0.45)'
-      : '0 4px 12px rgba(0,0,0,0.08)',
-
-    zIndex: 10,
-  }}
->
-  <ChevronRight size={20} />
-</button>
-</div>
+                <div style={{ display:'flex', gap:12, overflowX:'auto', paddingBottom:4, scrollbarWidth:'thin', scrollbarColor:`${isDark?'rgba(74,222,128,0.2)':'rgba(255,255,255,0.3)'} transparent` }}>
+                  {dashboardData.recommendations.map(p=>(
+                    <RecommendChip key={p._id} p={p} onAdd={handleAddToCart} t={t} isDark={isDark}/>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -712,7 +580,6 @@ const BuyerMarketplace = () => {
           ::-webkit-scrollbar-track { background:transparent; }
           ::-webkit-scrollbar-thumb { background:${isDark?'rgba(74,222,128,0.2)':'rgba(22,163,74,0.25)'}; border-radius:4px; }
           ::-webkit-scrollbar-thumb:hover { background:${isDark?'rgba(74,222,128,0.35)':'rgba(22,163,74,0.45)'}; }
-          .theme-switching, .theme-switching * { transition: none !important; }
         `}</style>
       </div>
     </div>
