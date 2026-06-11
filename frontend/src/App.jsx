@@ -8,6 +8,7 @@ import { ThemeProvider } from './context/ThemeContext.jsx';
 import { SocketProvider } from './context/SocketContext.jsx';
 import AppRoutes from './routes/AppRoutes.jsx';
 import { ToastProvider } from './components/layout/Toast.jsx';
+
 import './App.css';
 
 const queryClient = new QueryClient();

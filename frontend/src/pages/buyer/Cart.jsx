@@ -126,14 +126,22 @@ const BuyerCart = () => {
 
   // Helper pricing calculators
   const items = cart?.items || [];
-  const subtotal = items.reduce((sum, item) => {
-    const price = item.product?.effectivePrice || item.product?.price || 0;
-    return sum + price * item.quantity;
-  }, 0);
-  const discount = cart?.appliedCoupon ? cart.appliedCoupon.discount : 0;
-  const deliveryFee = subtotal > 5000 || subtotal === 0 ? 0 : 250;
-  const tax = Math.round(subtotal * 0.05 * 100) / 100;
-  const total = subtotal - discount + deliveryFee + tax;
+
+const subtotal = items.reduce((sum, item) => {
+  const price = item.product?.price || 0;
+  return sum + price * item.quantity;
+}, 0);
+
+const discountedSubtotal = items.reduce((sum, item) => {
+  const price = item.product?.effectivePrice || item.product?.price || 0;
+  return sum + price * item.quantity;
+}, 0);
+
+const discount = subtotal - discountedSubtotal;
+
+const deliveryFee = discountedSubtotal > 5000 || discountedSubtotal === 0 ? 0 : 250;
+const tax = 0;
+const total = discountedSubtotal + deliveryFee + tax;
 
   return (
     <div className="app-container">

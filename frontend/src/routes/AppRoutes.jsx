@@ -7,6 +7,9 @@ import Login from '../pages/auth/Login.jsx';
 import Register from '../pages/auth/Register.jsx';
 import VerifyOTP from '../pages/auth/VerifyOTP.jsx';
 
+
+import AuthCallback from '../pages/auth/AuthCallback.jsx';
+
 // Supplier Pages
 import SupplierDashboard from '../pages/supplier/Dashboard.jsx';
 import SupplierInventory from '../pages/supplier/Inventory.jsx';
@@ -50,6 +53,7 @@ const AppRoutes = () => {
 
   return (
     <Routes>
+      
       {/* Public Routes */}
       <Route
         path="/login"
@@ -61,6 +65,7 @@ const AppRoutes = () => {
           )
         }
       />
+      
       <Route
         path="/register"
         element={
@@ -82,6 +87,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      
       <Route
         path="/supplier/inventory"
         element={
@@ -150,7 +156,18 @@ const AppRoutes = () => {
           <Navigate to={isAuthenticated ? (user.role === 'supplier' ? '/supplier/dashboard' : '/marketplace') : '/login'} replace />
         }
       />
+       {/* Auth Callback - Google OAuth */}
+      <Route path="/auth/callback" element={<AuthCallback />} />
+
+      {/* Fallback Redirect */}
+      <Route
+        path="*"
+        element={
+          <Navigate to={isAuthenticated ? (user.role === 'supplier' ? '/dashboard' : '/marketplace') : '/login'} replace />
+        }
+      />
     </Routes>
+    
   );
 };
 

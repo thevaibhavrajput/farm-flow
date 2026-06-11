@@ -28,7 +28,8 @@ const Navbar = () => {
       console.error(err);
     }
   };
-
+//   console.log(user);
+// console.log(user?.avatar);
   return (
     <nav className="navbar navbar-expand-lg glass-panel px-4 py-2 mb-4 ">
       <div className="container-fluid d-flex align-items-center justify-content-between">
@@ -91,39 +92,83 @@ const Navbar = () => {
           </div>
 
           {/* User Profile Dropdown */}
-          <div className="dropdown">
-            <button
-              className="btn d-flex align-items-center gap-2 border-0 p-1"
-              type="button"
-              id="userProfileDropdown"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              {user?.avatar ? (
-                <img src={user.avatar} alt="Avatar" className="rounded-circle" width="36" height="36" />
-              ) : (
-                <div className="gradient-bg text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '36px', height: '36px' }}>
-                  {user?.firstName?.charAt(0)}
-                </div>
-              )}
-              <div className="text-start d-none d-md-block">
-                <div className="fw-semibold  leading-none" style={{ fontSize: '14px' }}>{user?.fullName}</div>
-                <div className="text-muted text-capitalize" style={{ fontSize: '11px' }}>{user?.role}</div>
-              </div>
-            </button>
-            <ul className="dropdown-menu dropdown-menu-end border-0 shadow-lg card-farm p-1" aria-labelledby="userProfileDropdown">
-              <li>
-                <Link className="dropdown-item rounded d-flex align-items-center gap-2 py-2" to="/profile">
-                  <User size={16} /> Profile Settings
-                </Link>
-              </li>
-              <li>
-                <button className="dropdown-item rounded text-danger d-flex align-items-center gap-2 py-2" onClick={handleLogout}>
-                  <LogOut size={16} /> Log Out
-                </button>
-              </li>
-            </ul>
-          </div>
+          {/* User Profile Dropdown */}
+<div className="dropdown">
+  <div className="d-flex align-items-center">
+    {/* Clickable Profile Area */}
+    <button
+      className="btn d-flex align-items-center gap-2 border-0 p-1"
+      onClick={() => navigate('/profile')}
+    >
+      {user?.avatar ? (
+        <img
+          src={user.avatar}
+          alt="Avatar"
+          className="rounded-circle"
+          width="36"
+          height="36"
+        />
+      ) : (
+        <div
+          className="gradient-bg text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
+          style={{ width: '36px', height: '36px' }}
+        >
+          {user?.firstName?.charAt(0)}
+        </div>
+      )}
+
+      <div className="text-start d-none d-md-block">
+        <div
+          className="fw-semibold"
+          style={{ fontSize: '14px' }}
+        >
+          {user?.fullName}
+        </div>
+
+        <div
+          className="text-muted text-capitalize"
+          style={{ fontSize: '11px' }}
+        >
+          {user?.role}
+        </div>
+      </div>
+    </button>
+
+    {/* Dropdown Toggle */}
+    {/* <button
+      className="btn dropdown-toggle border-0"
+      type="button"
+      id="userProfileDropdown"
+      data-bs-toggle="dropdown"
+      aria-expanded="false"
+    /> */}
+  </div>
+
+  <ul
+    className="dropdown-menu dropdown-menu-end border-0 shadow-lg card-farm p-1"
+    aria-labelledby="userProfileDropdown"
+  >
+    <li>
+      <Link
+        className="dropdown-item rounded d-flex align-items-center gap-2 py-2"
+        to="/profile"
+      >
+        <User size={16} />
+        Profile Settings
+      </Link>
+    </li>
+
+    <li>
+      <button
+        className="dropdown-item rounded text-danger d-flex align-items-center gap-2 py-2"
+        onClick={handleLogout}
+      >
+        <LogOut size={16} />
+        Log Out
+      </button>
+    </li>
+  </ul>
+</div>
         </div>
       </div>
     </nav>

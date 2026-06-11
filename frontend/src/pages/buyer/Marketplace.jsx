@@ -192,6 +192,13 @@ const DiscountBadge = ({ discount }) => {
 
 /* ─── Product Card ──────────────────────────────────────────────────── */
 const ProductCard = ({ p, onAdd, adding, t }) => {
+  const discountPct = p.discount?.isActive && p.discount?.type === 'percentage'
+    ? parseFloat(p.discount.value) || 0
+    : 0;
+  const finalPrice = discountPct > 0
+    ? (p.price - (p.price * discountPct / 100)).toFixed(2)
+    : null;
+
   const catMap = {
     Vegetables: { color: t.catVegColor, bg: t.catVegBg, border: t.catVegBorder, icon: <Leaf size={16}/> },
     Fruits:     { color: t.catFruColor, bg: t.catFruBg, border: t.catFruBorder, icon: <Apple size={16}/> },
@@ -236,15 +243,15 @@ const ProductCard = ({ p, onAdd, adding, t }) => {
 
         <div style={{ marginTop:'auto', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <div>
-            {p.discount?.isActive ? (
+            {finalPrice ? (
               <div style={{ display:'flex', alignItems:'baseline', gap:5 }}>
-                <span style={{ fontSize:18, fontWeight:800, color:t.textPrice }}>₹{p.effectivePrice}</span>
-                <span style={{ fontSize:12, color:t.textStrike, textDecoration:'line-through' }}>₹{p.price}</span>
+                <span style={{ fontSize:12, color:t.textMuted, textDecoration:'line-through' }}>₹{p.price}</span>
+                <span style={{ fontSize:18, fontWeight:800, color:t.textPrice }}>₹{finalPrice}</span>
               </div>
             ) : (
               <span style={{ fontSize:18, fontWeight:800, color:t.textPrice }}>₹{p.price}</span>
             )}
-            <div style={{ fontSize:11,color:t.textMuted, marginTop:1 }}>per {p.unit} · Stock: {p.stock?.quantity}</div>
+            <div style={{ fontSize:11, color:t.textMuted, marginTop:1 }}>per {p.unit} · Stock: {p.stock?.quantity}</div>
           </div>
 
           <button
