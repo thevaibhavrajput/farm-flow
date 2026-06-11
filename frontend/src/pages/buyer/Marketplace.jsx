@@ -5,7 +5,7 @@ import { addItemToCart } from '../../store/slices/cartSlice.js';
 import api from '../../api/api.js';
 import { Search, ShoppingCart, Sparkles, ChevronRight, Leaf, Apple, Salad, SlidersHorizontal, TrendingUp,ChevronLeft } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar.jsx';
-import Sidebar from '../../components/layout/Sidebar.jsx';
+// import Sidebar from '../../components/layout/Sidebar.jsx';
 import { useToast } from '../../components/layout/Toast.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { useNavigate } from 'react-router-dom';
@@ -417,7 +417,7 @@ const BuyerMarketplace = () => {
 
   return (
     <div className="app-container" style={{ colorScheme: t.colorScheme }}>
-      <Sidebar />
+      {/* <Sidebar /> */}
       <div className="main-content" style={{ position:'relative', background:t.pageBg, minHeight:'100vh' }}>
         <BotanicalBg isDark={isDark}/>
         {isDark && <AmbientOrbs/>}

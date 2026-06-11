@@ -4,7 +4,7 @@ import { updateUserProfile } from '../../store/slices/authSlice.js';
 import api from '../../api/api.js';
 import { User, Store, MapPin, Plus, Trash2, Save } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar.jsx';
-import Sidebar from '../../components/layout/Sidebar.jsx';
+// import Sidebar from '../../components/layout/Sidebar.jsx';
 import { useToast } from '../../components/layout/Toast.jsx';
 
 const Profile = () => {
@@ -144,7 +144,7 @@ const [removingRow, setRemovingRow] = useState(null);
 
   return (
     <div className="app-container">
-      <Sidebar />
+      {/* <Sidebar /> */}
       <div className="main-content">
         <Navbar />
 

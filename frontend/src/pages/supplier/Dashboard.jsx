@@ -22,7 +22,7 @@ import {
   Sparkles 
 } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar.jsx';
-import Sidebar from '../../components/layout/Sidebar.jsx';
+// import Sidebar from '../../components/layout/Sidebar.jsx';
 
 ChartJS.register(
   CategoryScale,
@@ -77,7 +77,7 @@ const SupplierDashboard = () => {
 
   return (
     <div className="app-container">
-      <Sidebar />
+      {/* <Sidebar /> */}
       <div className="main-content">
         <Navbar />
         

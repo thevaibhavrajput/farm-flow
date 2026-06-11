@@ -3,11 +3,10 @@ import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/api.js';
 import {
-  Eye, Truck, Check, FileDown, Search, SlidersHorizontal,
-  X, ChevronDown, ChevronUp, Package, MapPin, CheckCircle2,
+  Eye, FileDown, Search, SlidersHorizontal,
+  X, ChevronDown, ChevronUp, CalendarDays,
 } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar.jsx';
-import Sidebar from '../../components/layout/Sidebar.jsx';
 import { useToast } from '../../components/layout/Toast.jsx';
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -26,7 +25,9 @@ const getDateKey = (dateStr) => new Date(dateStr).toISOString().split('T')[0];
 
 const formatOrderTime = (dateStr) => {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleTimeString('default', { hour: '2-digit', minute: '2-digit', hour12: true });
+  return new Date(dateStr).toLocaleTimeString('default', {
+    hour: '2-digit', minute: '2-digit', hour12: true,
+  });
 };
 
 const groupOrdersByDate = (orders) => {
@@ -44,35 +45,33 @@ const groupOrdersByDate = (orders) => {
 
 // ── Filter constants ──────────────────────────────────────────────────────────
 
-const STATUS_OPTIONS = ['pending', 'confirmed', 'packed', 'out_for_delivery', 'delivered', 'cancelled'];
+const STATUS_OPTIONS  = ['pending', 'confirmed', 'packed', 'out_for_delivery', 'delivered', 'cancelled'];
 const PAYMENT_OPTIONS = ['cod', 'upi', 'card', 'netbanking', 'wallet', 'online'];
-const ITEMS_RANGES = [
-  { label: 'Any', min: 0, max: Infinity },
-  { label: '1 item', min: 1, max: 1 },
-  { label: '2–5 items', min: 2, max: 5 },
-  { label: '6–10 items', min: 6, max: 10 },
+const ITEMS_RANGES    = [
+  { label: 'Any',       min: 0,  max: Infinity },
+  { label: '1 item',    min: 1,  max: 1 },
+  { label: '2–5 items', min: 2,  max: 5 },
+  { label: '6–10 items',min: 6,  max: 10 },
   { label: '10+ items', min: 11, max: Infinity },
 ];
 const PRICE_RANGES = [
-  { label: 'Any', min: 0, max: Infinity },
-  { label: 'Under ₹500', min: 0, max: 499 },
-  { label: '₹500 – ₹2,000', min: 500, max: 2000 },
-  { label: '₹2,000 – ₹5,000', min: 2001, max: 5000 },
-  { label: '₹5,000+', min: 5001, max: Infinity },
+  { label: 'Any',            min: 0,    max: Infinity },
+  { label: 'Under ₹500',     min: 0,    max: 499 },
+  { label: '₹500 – ₹2,000',  min: 500,  max: 2000 },
+  { label: '₹2,000 – ₹5,000',min: 2001, max: 5000 },
+  { label: '₹5,000+',        min: 5001, max: Infinity },
 ];
+
 const STATUS_COLORS = {
-  pending: '#f59e0b',
-  confirmed: '#3b82f6',
-  processing: '#8b5cf6',
-  packed: '#06b6d4',
+  pending:          '#f59e0b',
+  confirmed:        '#3b82f6',
+  processing:       '#8b5cf6',
+  packed:           '#06b6d4',
   out_for_delivery: '#f97316',
-  delivered: '#22c55e',
-  cancelled: '#ef4444',
+  delivered:        '#22c55e',
+  cancelled:        '#ef4444',
 };
 
-// ── Full order status pipeline ────────────────────────────────────────────────
-// These are every step the supplier can move through, in order.
-// pending → confirmed → processing → packed → out_for_delivery → delivered
 const STATUS_PIPELINE = [
   { key: 'pending',          label: 'Pending',          icon: '🕐' },
   { key: 'confirmed',        label: 'Confirmed',        icon: '✅' },
@@ -82,8 +81,6 @@ const STATUS_PIPELINE = [
   { key: 'delivered',        label: 'Delivered',        icon: '🎉' },
 ];
 
-// Given the current status, return which steps the supplier can
-// directly click to advance to (only the immediate next step is allowed).
 const getNextAllowedStatus = (currentStatus) => {
   const idx = STATUS_PIPELINE.findIndex(s => s.key === currentStatus);
   if (idx === -1 || idx === STATUS_PIPELINE.length - 1) return null;
@@ -106,22 +103,18 @@ const FilterPanel = ({ filters, setFilters, onClose, anchorRef }) => {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [onClose, anchorRef]);
 
-  const toggleStatus = (s) =>
-    setFilters(f => ({
-      ...f,
-      statuses: f.statuses.includes(s) ? f.statuses.filter(x => x !== s) : [...f.statuses, s],
-    }));
-
-  const togglePayment = (p) =>
-    setFilters(f => ({
-      ...f,
-      payments: f.payments.includes(p) ? f.payments.filter(x => x !== p) : [...f.payments, p],
-    }));
+  const toggleStatus  = (s) => setFilters(f => ({
+    ...f, statuses: f.statuses.includes(s) ? f.statuses.filter(x => x !== s) : [...f.statuses, s],
+  }));
+  const togglePayment = (p) => setFilters(f => ({
+    ...f, payments: f.payments.includes(p) ? f.payments.filter(x => x !== p) : [...f.payments, p],
+  }));
 
   const activeCount =
     filters.statuses.length + filters.payments.length +
     (filters.itemsRange.label !== 'Any' ? 1 : 0) +
-    (filters.priceRange.label !== 'Any' ? 1 : 0);
+    (filters.priceRange.label  !== 'Any' ? 1 : 0) +
+    (filters.date ? 1 : 0);
 
   const sectionLabel = {
     fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)',
@@ -163,14 +156,47 @@ const FilterPanel = ({ filters, setFilters, onClose, anchorRef }) => {
           )}
         </div>
         <button
-          onClick={() => setFilters({ statuses: [], payments: [], itemsRange: ITEMS_RANGES[0], priceRange: PRICE_RANGES[0] })}
+          onClick={() => setFilters({ statuses: [], payments: [], itemsRange: ITEMS_RANGES[0], priceRange: PRICE_RANGES[0], date: '' })}
           style={{ fontSize: '12px', color: '#ef4444', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
         >
           Clear all
         </button>
       </div>
 
-      <div style={{ padding: '14px 16px', maxHeight: '430px', overflowY: 'auto', background: 'var(--bg-card)' }}>
+      <div style={{ padding: '14px 16px', maxHeight: '500px', overflowY: 'auto', background: 'var(--bg-card)' }}>
+        {/* Date Picker */}
+        <div style={{ marginBottom: '18px' }}>
+          <div style={sectionLabel}>Order Date</div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            border: `1.5px solid ${filters.date ? 'var(--primary-green)' : 'var(--border-color)'}`,
+            borderRadius: '10px', padding: '7px 10px',
+            background: filters.date ? 'rgba(74,124,89,0.07)' : 'var(--bg-cream)',
+            transition: 'all 0.2s',
+          }}>
+            <CalendarDays size={15} color={filters.date ? 'var(--primary-green)' : 'var(--text-muted)'} />
+            <input
+              type="date"
+              value={filters.date || ''}
+              onChange={(e) => setFilters(f => ({ ...f, date: e.target.value }))}
+              style={{
+                flex: 1, border: 'none', outline: 'none',
+                background: 'transparent', fontSize: '13px',
+                color: filters.date ? 'var(--primary-green)' : 'var(--text-dark)',
+                fontWeight: filters.date ? 600 : 400,
+                cursor: 'pointer',
+              }}
+            />
+            {filters.date && (
+              <button
+                onClick={() => setFilters(f => ({ ...f, date: '' }))}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--text-muted)' }}
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Order Status */}
         <div style={{ marginBottom: '18px' }}>
@@ -178,7 +204,7 @@ const FilterPanel = ({ filters, setFilters, onClose, anchorRef }) => {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {STATUS_OPTIONS.map(s => {
               const active = filters.statuses.includes(s);
-              const col = STATUS_COLORS[s];
+              const col    = STATUS_COLORS[s];
               return (
                 <button key={s} onClick={() => toggleStatus(s)} style={{
                   padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
@@ -279,10 +305,7 @@ const FilterPanel = ({ filters, setFilters, onClose, anchorRef }) => {
   );
 };
 
-// ── Status Step Bar (inside modal) ───────────────────────────────────────────
-// Shows the full pipeline as a horizontal stepper. Completed steps are filled
-// green, the current step is highlighted, future steps are grey.
-// Only the immediate NEXT step is clickable; the rest are display-only.
+// ── Status Step Bar ───────────────────────────────────────────────────────────
 
 const StatusStepBar = ({ currentStatus, onAdvance, isLoading, isCancelled }) => {
   const currentIdx = STATUS_PIPELINE.findIndex(s => s.key === currentStatus);
@@ -304,28 +327,23 @@ const StatusStepBar = ({ currentStatus, onAdvance, isLoading, isCancelled }) => 
 
   return (
     <div>
-      {/* Step nodes */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 0,
-        overflowX: 'auto', paddingBottom: '4px',
-      }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0, overflowX: 'auto', paddingBottom: '4px' }}>
         {STATUS_PIPELINE.map((step, idx) => {
-          const isDone = idx < currentIdx;
+          const isDone    = idx < currentIdx;
           const isCurrent = idx === currentIdx;
-          const isNext = step.key === nextStatus;
-          const isFuture = idx > currentIdx;
+          const isNext    = step.key === nextStatus;
+          const isFuture  = idx > currentIdx;
 
-          let nodeColor = 'var(--border-color)';
-          let nodeBg = 'var(--bg-card)';
-          let textColor = 'var(--text-muted)';
+          let nodeColor  = 'var(--border-color)';
+          let nodeBg     = 'var(--bg-card)';
+          let textColor  = 'var(--text-muted)';
           let fontWeight = 400;
 
-          if (isDone) { nodeColor = '#22c55e'; nodeBg = '#22c55e'; textColor = '#22c55e'; fontWeight = 600; }
+          if (isDone)    { nodeColor = '#22c55e'; nodeBg = '#22c55e'; textColor = '#22c55e'; fontWeight = 600; }
           if (isCurrent) { nodeColor = STATUS_COLORS[step.key] || 'var(--primary-green)'; nodeBg = STATUS_COLORS[step.key] || 'var(--primary-green)'; textColor = STATUS_COLORS[step.key] || 'var(--primary-green)'; fontWeight = 700; }
 
           return (
             <React.Fragment key={step.key}>
-              {/* Node */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '64px' }}>
                 <button
                   disabled={!isNext || isLoading}
@@ -338,82 +356,54 @@ const StatusStepBar = ({ currentStatus, onAdvance, isLoading, isCancelled }) => 
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: isDone ? '14px' : '15px',
                     cursor: isNext && !isLoading ? 'pointer' : 'default',
-                    outline: 'none',
-                    transition: 'all 0.2s',
-                    position: 'relative',
-                    // Pulse ring on the clickable next step
-                    boxShadow: isNext && !isLoading
-                      ? `0 0 0 4px ${(STATUS_COLORS[step.key] || 'var(--primary-green)') + '33'}`
-                      : 'none',
+                    outline: 'none', transition: 'all 0.2s', position: 'relative',
+                    boxShadow: isNext && !isLoading ? `0 0 0 4px ${(STATUS_COLORS[step.key] || 'var(--primary-green)') + '33'}` : 'none',
                   }}
                 >
                   {isDone
                     ? <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700 }}>✓</span>
                     : <span style={{ fontSize: '13px' }}>{step.icon}</span>
                   }
-                  {/* "Next" label badge */}
                   {isNext && !isLoading && (
                     <span style={{
                       position: 'absolute', top: '-8px', left: '50%', transform: 'translateX(-50%)',
                       background: STATUS_COLORS[step.key] || 'var(--primary-green)',
                       color: '#fff', fontSize: '8px', fontWeight: 800,
-                      padding: '1px 5px', borderRadius: '6px',
-                      whiteSpace: 'nowrap', letterSpacing: '0.04em',
+                      padding: '1px 5px', borderRadius: '6px', whiteSpace: 'nowrap', letterSpacing: '0.04em',
                     }}>NEXT</span>
                   )}
                   {isLoading && isNext && (
                     <span style={{
                       position: 'absolute', inset: 0, borderRadius: '50%',
-                      border: `3px solid ${nodeColor}`,
-                      borderTopColor: 'transparent',
+                      border: `3px solid ${nodeColor}`, borderTopColor: 'transparent',
                       animation: 'spin 0.7s linear infinite',
                     }} />
                   )}
                 </button>
-                <span style={{
-                  marginTop: '5px', fontSize: '10px', fontWeight,
-                  color: textColor, textAlign: 'center', lineHeight: 1.2,
-                  maxWidth: '60px',
-                }}>
+                <span style={{ marginTop: '5px', fontSize: '10px', fontWeight, color: textColor, textAlign: 'center', lineHeight: 1.2, maxWidth: '60px' }}>
                   {step.label}
                 </span>
               </div>
-
-              {/* Connector line between nodes */}
               {idx < STATUS_PIPELINE.length - 1 && (
                 <div style={{
                   flex: 1, height: '2.5px', minWidth: '12px',
                   background: idx < currentIdx ? '#22c55e' : 'var(--border-color)',
-                  transition: 'background 0.3s',
-                  marginBottom: '20px',
+                  transition: 'background 0.3s', marginBottom: '20px',
                 }} />
               )}
             </React.Fragment>
           );
         })}
       </div>
-
-      {/* CTA hint */}
       {nextStatus && !isLoading && (
-        <div style={{
-          marginTop: '10px', textAlign: 'center',
-          fontSize: '12px', color: 'var(--text-muted)',
-        }}>
+        <div style={{ marginTop: '10px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
           Click the <strong style={{ color: STATUS_COLORS[nextStatus] }}>
             {STATUS_PIPELINE.find(s => s.key === nextStatus)?.label}
           </strong> node above to advance this order
         </div>
       )}
-      {isLoading && (
-        <div style={{ marginTop: '10px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
-          Updating status…
-        </div>
-      )}
-      {currentStatus === 'delivered' && (
-        <div style={{ marginTop: '10px', textAlign: 'center', fontSize: '12px', color: '#22c55e', fontWeight: 600 }}>
-          🎉 Order fully delivered
-        </div>
-      )}
+      {isLoading && <div style={{ marginTop: '10px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>Updating status…</div>}
+      {currentStatus === 'delivered' && <div style={{ marginTop: '10px', textAlign: 'center', fontSize: '12px', color: '#22c55e', fontWeight: 600 }}>🎉 Order fully delivered</div>}
     </div>
   );
 };
@@ -423,17 +413,18 @@ const StatusStepBar = ({ currentStatus, onAdvance, isLoading, isCancelled }) => 
 const SupplierOrders = () => {
   const queryClient = useQueryClient();
   const showToast   = useToast();
+
   const [downloadingInvoice, setDownloadingInvoice] = useState(null);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [comment, setComment] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [selectedOrder, setSelectedOrder]           = useState(null);
+  const [comment, setComment]                       = useState('');
+  const [searchQuery, setSearchQuery]               = useState('');
+  const [showFilters, setShowFilters]               = useState(false);
   const filterBtnRef = useRef(null);
+
   const [filters, setFilters] = useState({
-    statuses: [],
-    payments: [],
-    itemsRange: ITEMS_RANGES[0],
-    priceRange: PRICE_RANGES[0],
+    statuses: [], payments: [],
+    itemsRange: ITEMS_RANGES[0], priceRange: PRICE_RANGES[0],
+    date: '',
   });
 
   const { data: orderData, isLoading } = useQuery({
@@ -444,98 +435,69 @@ const SupplierOrders = () => {
     },
   });
 
-  // ── Status update mutation ────────────────────────────────────────────────
   const statusMutation = useMutation({
-    mutationFn: async ({ id, status, comment }) =>
-      api.patch(`/orders/${id}/status`, { status, comment }),
+    mutationFn: async ({ id, status, comment }) => api.patch(`/orders/${id}/status`, { status, comment }),
     onSuccess: (res) => {
       queryClient.invalidateQueries(['supplierOrders']);
-      // Update the modal's local copy so the stepper re-renders immediately
       const updated = res?.data?.data?.order;
       if (updated) setSelectedOrder(updated);
       setComment('');
     },
   });
 
-  // Convenience wrapper used by the stepper node click
+  const cancelMutation = useMutation({
+    mutationFn: async ({ id, reason }) => api.post(`/orders/${id}/cancel`, { reason }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries(['supplierOrders']);
+      const updated = res?.data?.data?.order;
+      if (updated) setSelectedOrder(updated);
+      setComment('');
+    },
+  });
+
   const handleAdvanceStatus = (nextStatus) => {
     if (!selectedOrder) return;
     statusMutation.mutate({ id: selectedOrder._id, status: nextStatus, comment });
   };
 
-  // Cancel uses the dedicated cancel endpoint
-  const cancelMutation = useMutation({
-    mutationFn: async ({ id, reason }) =>
-      api.post(`/orders/${id}/cancel`, { reason }),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries(['supplierOrders']);
-      const updated = res?.data?.data?.order;
-      if (updated) setSelectedOrder(updated);
-      setComment('');
-    },
-  });
-
- const handleDownloadInvoice = async (id, orderNumber) => {
-  try {
-    setDownloadingInvoice(id);
-
-    const response = await api.get(`/orders/${id}/invoice`, {
-      responseType: 'blob',
-    });
-
-    const blob = new Blob([response.data], {
-      type: 'application/pdf',
-    });
-
-    const url = window.URL.createObjectURL(blob);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `invoice-${orderNumber}.pdf`;
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    window.URL.revokeObjectURL(url);
-
-    showToast({
-      title: 'Invoice Downloaded',
-      sub: `Invoice ${orderNumber} downloaded successfully`,
-      variant: 'success',
-      duration: 3000,
-    });
-
-  } catch (error) {
-    console.error(error);
-
-    showToast({
-      title: 'Download Failed',
-      sub: 'Failed to download invoice',
-      variant: 'error',
-      duration: 3000,
-    });
-
-  } finally {
-    setDownloadingInvoice(null);
-  }
-};
+  const handleDownloadInvoice = async (id, orderNumber) => {
+    try {
+      setDownloadingInvoice(id);
+      const response = await api.get(`/orders/${id}/invoice`, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url  = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url; link.download = `invoice-${orderNumber}.pdf`;
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      showToast({ title: 'Invoice Downloaded', sub: `Invoice ${orderNumber} downloaded successfully`, variant: 'success', duration: 3000 });
+    } catch (error) {
+      console.error(error);
+      showToast({ title: 'Download Failed', sub: 'Failed to download invoice', variant: 'error', duration: 3000 });
+    } finally {
+      setDownloadingInvoice(null);
+    }
+  };
 
   // ── Filtering ─────────────────────────────────────────────────────────────
   const filteredOrders = (orderData || []).filter((order) => {
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const biz = order.buyer?.businessInfo?.businessName?.toLowerCase() || '';
+      const q     = searchQuery.toLowerCase();
+      const biz   = order.buyer?.businessInfo?.businessName?.toLowerCase() || '';
       const first = order.buyer?.firstName?.toLowerCase() || '';
-      const last = order.buyer?.lastName?.toLowerCase() || '';
+      const last  = order.buyer?.lastName?.toLowerCase() || '';
       if (!biz.includes(q) && !(first + ' ' + last).includes(q) && !first.includes(q)) return false;
     }
-    if (filters.statuses.length > 0 && !filters.statuses.includes(order.status)) return false;
-    if (filters.payments.length > 0 && !filters.payments.includes(order.payment?.method?.toLowerCase())) return false;
+    if (filters.statuses.length  > 0 && !filters.statuses.includes(order.status)) return false;
+    if (filters.payments.length  > 0 && !filters.payments.includes(order.payment?.method?.toLowerCase())) return false;
     const itemCount = order.items?.length || 0;
     if (itemCount < filters.itemsRange.min || itemCount > filters.itemsRange.max) return false;
     const total = order.pricing?.total || 0;
     if (total < filters.priceRange.min || total > filters.priceRange.max) return false;
+    if (filters.date) {
+      const placedKey = order.createdAt ? getDateKey(order.createdAt) : '';
+      if (placedKey !== filters.date) return false;
+    }
     return true;
   });
 
@@ -544,35 +506,31 @@ const SupplierOrders = () => {
   const activeFilterCount =
     filters.statuses.length + filters.payments.length +
     (filters.itemsRange.label !== 'Any' ? 1 : 0) +
-    (filters.priceRange.label !== 'Any' ? 1 : 0);
+    (filters.priceRange.label !== 'Any' ? 1 : 0) +
+    (filters.date ? 1 : 0);
 
   const clearAll = () => {
-    setFilters({ statuses: [], payments: [], itemsRange: ITEMS_RANGES[0], priceRange: PRICE_RANGES[0] });
+    setFilters({ statuses: [], payments: [], itemsRange: ITEMS_RANGES[0], priceRange: PRICE_RANGES[0], date: '' });
     setSearchQuery('');
   };
 
   const chipStyle = {
     display: 'inline-flex', alignItems: 'center', gap: '4px',
-    padding: '3px 10px',
-    background: 'rgba(74,124,89,0.12)',
-    color: 'var(--primary-green)',
-    border: '1px solid rgba(74,124,89,0.2)',
+    padding: '3px 10px', background: 'rgba(74,124,89,0.12)',
+    color: 'var(--primary-green)', border: '1px solid rgba(74,124,89,0.2)',
     borderRadius: '20px', fontSize: '12px', fontWeight: 600,
   };
-  const chipBtnStyle = {
-    background: 'none', border: 'none', cursor: 'pointer',
-    padding: 0, display: 'flex', color: 'inherit',
-  };
+  const chipBtnStyle = { background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'inherit' };
+  const isModalBusy  = statusMutation.isPending || cancelMutation.isPending;
 
-  const isModalBusy = statusMutation.isPending || cancelMutation.isPending;
+  // ── Grid column definition (mirrors inventory) ────────────────────────────
+  // Order No. | Customer | Items | Total | Payment | Status | Actions
+  const GRID_COLS = '160px 1fr 100px 120px 130px 150px 90px';
 
   return (
     <div className="app-container">
-      <Sidebar />
       <div className="main-content">
         <Navbar />
-
-        {/* Spin keyframe */}
         <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 
         <div className="container-fluid p-0 animate-fade-in">
@@ -586,33 +544,23 @@ const SupplierOrders = () => {
             <div className="d-flex align-items-center gap-2" style={{ flex: 1, justifyContent: 'flex-end', minWidth: 0 }}>
               {/* Search Bar */}
               <div style={{ position: 'relative', maxWidth: '260px', width: '100%' }}>
-                <Search size={15} style={{
-                  position: 'absolute', left: '11px', top: '50%',
-                  transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none',
-                }} />
+                <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                 <input
                   type="text"
                   placeholder="Search by customer name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{
-                    width: '100%', paddingLeft: '34px',
-                    paddingRight: searchQuery ? '32px' : '12px',
-                    paddingTop: '8px', paddingBottom: '8px',
-                    fontSize: '13px', border: '1.5px solid var(--border-color)',
-                    borderRadius: '10px', outline: 'none',
-                    background: 'var(--bg-card)', color: 'var(--text-dark)',
-                    transition: 'border-color 0.2s',
+                    width: '100%', paddingLeft: '34px', paddingRight: searchQuery ? '32px' : '12px',
+                    paddingTop: '8px', paddingBottom: '8px', fontSize: '13px',
+                    border: '1.5px solid var(--border-color)', borderRadius: '10px', outline: 'none',
+                    background: 'var(--bg-card)', color: 'var(--text-dark)', transition: 'border-color 0.2s',
                   }}
-                  onFocus={e => e.target.style.borderColor = 'var(--primary-green)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border-color)'}
+                  onFocus={e  => e.target.style.borderColor = 'var(--primary-green)'}
+                  onBlur={e   => e.target.style.borderColor = 'var(--border-color)'}
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} style={{
-                    position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--text-muted)', padding: 0, display: 'flex',
-                  }}>
+                  <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 0, display: 'flex' }}>
                     <X size={14} />
                   </button>
                 )}
@@ -635,11 +583,9 @@ const SupplierOrders = () => {
                   <SlidersHorizontal size={15} />
                   Filters
                   {activeFilterCount > 0 && (
-                    <span style={{
-                      background: 'var(--primary-green)', color: '#fff',
-                      borderRadius: '20px', fontSize: '10px', fontWeight: 700,
-                      padding: '1px 6px', marginLeft: '2px',
-                    }}>{activeFilterCount}</span>
+                    <span style={{ background: 'var(--primary-green)', color: '#fff', borderRadius: '20px', fontSize: '10px', fontWeight: 700, padding: '1px 6px', marginLeft: '2px' }}>
+                      {activeFilterCount}
+                    </span>
                   )}
                   {showFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </button>
@@ -664,6 +610,13 @@ const SupplierOrders = () => {
                 <span style={chipStyle}>
                   "{searchQuery}"
                   <button onClick={() => setSearchQuery('')} style={chipBtnStyle}><X size={11} /></button>
+                </span>
+              )}
+              {filters.date && (
+                <span style={chipStyle}>
+                  <CalendarDays size={11} />
+                  {new Date(filters.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  <button onClick={() => setFilters(f => ({ ...f, date: '' }))} style={chipBtnStyle}><X size={11} /></button>
                 </span>
               )}
               {filters.statuses.map(s => (
@@ -698,9 +651,7 @@ const SupplierOrders = () => {
 
           {/* ── Content ── */}
           {isLoading ? (
-            <div className="text-center py-5">
-              <div className="spinner-border text-success" role="status"></div>
-            </div>
+            <div className="text-center py-5"><div className="spinner-border text-success" role="status" /></div>
           ) : filteredOrders.length === 0 ? (
             <div className="card-farm p-5 text-center" style={{ color: 'var(--text-muted)' }}>
               {orderData?.length === 0 ? 'No orders received yet' : 'No orders match your search or filters'}
@@ -709,141 +660,209 @@ const SupplierOrders = () => {
             <div className="d-flex flex-column gap-4">
               {grouped.map(({ dateKey, orders: group }) => {
                 const label = dateKey !== 'unknown' ? formatDateLabel(dateKey) : null;
+
                 return (
                   <div key={dateKey}>
-                    {/* ── Date Header ── */}
+
+                    {/* ── Date header row (identical to inventory) ── */}
                     <div className="d-flex align-items-center gap-3 mb-3">
                       {label ? (
                         <>
+                          {/* Day block */}
                           <div
                             className="d-flex flex-column align-items-center justify-content-center"
-                            style={{ width: '52px', height: '52px', background: 'var(--primary-green)', borderRadius: '12px', flexShrink: 0 }}
+                            style={{ width: 52, height: 52, background: 'var(--primary-green)', borderRadius: 12, flexShrink: 0 }}
                           >
-                            <span style={{ fontSize: '20px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{label.day}</span>
-                            <span style={{ fontSize: '9px', fontWeight: 600, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{label.day}</span>
+                            <span style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                               {label.month.slice(0, 3)}
                             </span>
                           </div>
+
+                          {/* Weekday + date */}
                           <div style={{ lineHeight: 1.35 }}>
-                            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-dark)' }}>{label.weekday}</div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-dark)' }}>{label.weekday}</div>
+                            <div style={{ fontSize: 12, color: '#8a9b8a', fontWeight: 500 }}>
                               {label.day} {label.month} {label.year}
-                              <span className="ms-2 px-2 py-0" style={{
-                                background: 'rgba(74,124,89,0.12)', color: 'var(--primary-green)',
-                                borderRadius: '20px', fontSize: '11px', fontWeight: 600,
-                              }}>
+                              <span className="ms-2 px-2" style={{ background: 'rgba(74,124,89,0.1)', color: 'var(--primary-green)', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
                                 {group.length} {group.length === 1 ? 'order' : 'orders'}
                               </span>
                             </div>
                           </div>
-                          <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }} />
+
+                          {/* Divider */}
+                          <div style={{ flex: 1, height: 1, background: 'rgba(74,124,89,0.15)' }} />
                         </>
                       ) : (
-                        <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic' }}>Date unknown</div>
+                        <div style={{ fontSize: 13, color: '#aaa', fontStyle: 'italic' }}>Date unknown</div>
                       )}
                     </div>
 
-                    {/* ── Orders Table ── */}
-                    <div className="card-farm p-3">
-                      <div className="table-responsive">
-                        <table className="table table-hover align-middle mb-0" style={{ fontSize: '14px' }}>
-                          <thead>
-                            <tr>
-                              <th style={{ color: 'var(--text-muted)' }}>Order No.</th>
-                              <th style={{ color: 'var(--text-muted)' }}>Customer Name</th>
-                              <th style={{ color: 'var(--text-muted)' }}>Items Count</th>
-                              <th style={{ color: 'var(--text-muted)' }}>Total Pricing</th>
-                              <th style={{ color: 'var(--text-muted)' }}>Payment Method</th>
-                              <th style={{ color: 'var(--text-muted)' }}>Order Status</th>
-                              <th style={{ color: 'var(--text-muted)' }}>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {group.map((order) => (
-                              <tr key={order._id}>
-                                <td>
-                                  <div className="fw-semibold text-success">{order.orderNumber}</div>
-                                  {order.createdAt && (
-                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', fontWeight: 500 }}>
-                                      🕐 {formatOrderTime(order.createdAt)}
-                                    </div>
-                                  )}
-                                </td>
-                                <td>
-                                  <div className="fw-bold" style={{ color: 'var(--text-dark)' }}>
-                                    {order.buyer?.businessInfo?.businessName || 'Bulk Buyer'}
-                                  </div>
-                                  <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                                    {order.buyer?.firstName} {order.buyer?.lastName}
-                                  </div>
-                                </td>
-                                <td style={{ color: 'var(--text-dark)' }}>{order.items?.length} items</td>
-                                <td className="fw-bold" style={{ color: 'var(--text-dark)' }}>₹{order.pricing?.total}</td>
-                                <td className="text-uppercase" style={{ color: 'var(--text-dark)' }}>{order.payment?.method}</td>
-                                <td>
-                                  <span className={`badge badge-${order.status}`}>
-                                    {order.status.replace(/_/g, ' ')}
-                                  </span>
-                                </td>
-                                <td>
-                                  <div className="d-flex gap-2">
-                                    <button
-                                      className="btn btn-outline-success d-flex align-items-center gap-1"
-                                      style={{ padding: '2px 6px', fontSize: '12px', lineHeight: '1.2' }}
-                                      onClick={() => { setSelectedOrder(order); setComment(''); }}
-                                    >
-                                      <Eye size={12} /> View
-                                    </button>
-                                    <button
-  className="btn btn-outline-dark btn-sm"
-  onClick={() => handleDownloadInvoice(order._id, order.orderNumber)}
-  disabled={downloadingInvoice === order._id}
->
-  {downloadingInvoice === order._id ? (
-    <span
-      className="spinner-border spinner-border-sm"
-      role="status"
-      aria-hidden="true"
-    />
-  ) : (
-    <FileDown size={14} />
-  )}
-</button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    {/* ── Grid card (mirrors inventory layout) ── */}
+                    <div className="card-farm" style={{ overflow: 'hidden' }}>
+
+                      {/* Grid header */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: GRID_COLS,
+                        padding: '10px 20px',
+                        gap: 12,
+                        background: 'rgba(74,124,89,0.06)',
+                        borderBottom: '1px solid rgba(74,124,89,0.12)',
+                      }}>
+                        {['Order No.', 'Customer', 'Items', 'Total', 'Payment', 'Status', ''].map((h, i) => (
+                          <div key={i} style={{
+                            fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
+                            textTransform: 'uppercase', color: 'var(--primary-green)', opacity: 0.75,
+                          }}>{h}</div>
+                        ))}
                       </div>
+
+                      {/* Grid rows */}
+                      {group.map((order, rowIdx) => {
+                        const isLast     = rowIdx === group.length - 1;
+                        const statusCol  = STATUS_COLORS[order.status] || 'var(--primary-green)';
+
+                        return (
+                          <div
+                            key={order._id}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: GRID_COLS,
+                              padding: '13px 20px',
+                              gap: 12,
+                              alignItems: 'center',
+                              borderBottom: isLast ? 'none' : '1px solid rgba(74,124,89,0.07)',
+                              transition: 'background 0.15s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(74,124,89,0.04)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          >
+                            {/* Order number + time */}
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--primary-green)', lineHeight: 1.3 }}>
+                                {order.orderNumber}
+                              </div>
+                              {order.createdAt && (
+                                <div style={{ fontSize: 11, color: '#8a9b8a', marginTop: 2, fontWeight: 500 }}>
+                                  🕐 {formatOrderTime(order.createdAt)}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Customer name */}
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-dark)', lineHeight: 1.3 }}>
+                                {order.buyer?.businessInfo?.businessName || 'Bulk Buyer'}
+                              </div>
+                              <div style={{ fontSize: 11, color: '#8a9b8a', marginTop: 2 }}>
+                                {order.buyer?.firstName} {order.buyer?.lastName}
+                              </div>
+                            </div>
+
+                            {/* Items count pill */}
+                            <div>
+                              <span style={{
+                                display: 'inline-block', fontSize: 11, fontWeight: 600,
+                                color: 'var(--primary-green)', background: 'rgba(74,124,89,0.09)',
+                                borderRadius: 20, padding: '3px 10px',
+                              }}>
+                                {order.items?.length} {order.items?.length === 1 ? 'item' : 'items'}
+                              </span>
+                            </div>
+
+                            {/* Total */}
+                            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-dark)' }}>
+                              ₹{order.pricing?.total}
+                            </div>
+
+                            {/* Payment method pill */}
+                            <div>
+                              <span style={{
+                                display: 'inline-block', fontSize: 11, fontWeight: 700,
+                                color: '#555', background: 'rgba(0,0,0,0.06)',
+                                borderRadius: 20, padding: '3px 10px',
+                                textTransform: 'uppercase', letterSpacing: '0.04em',
+                              }}>
+                                {order.payment?.method || '—'}
+                              </span>
+                            </div>
+
+                            {/* Status badge — coloured like inventory "In Stock / Low Stock" */}
+                            <div>
+                              <span style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 5,
+                                fontSize: 11, fontWeight: 600,
+                                color: statusCol,
+                                background: statusCol + '1a',
+                                borderRadius: 20, padding: '3px 10px',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: statusCol, flexShrink: 0 }} />
+                                {order.status.replace(/_/g, ' ')}
+                              </span>
+                            </div>
+
+                            {/* Actions */}
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button
+                                onClick={() => { setSelectedOrder(order); setComment(''); }}
+                                title="View"
+                                style={{
+                                  width: 32, height: 32,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  border: '1.5px solid rgba(74,124,89,0.3)', borderRadius: 8,
+                                  background: 'transparent', color: 'var(--primary-green)',
+                                  cursor: 'pointer', transition: 'all 0.15s',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,124,89,0.1)'; e.currentTarget.style.borderColor = 'var(--primary-green)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(74,124,89,0.3)'; }}
+                              >
+                                <Eye size={13} />
+                              </button>
+
+                              <button
+                                onClick={() => handleDownloadInvoice(order._id, order.orderNumber)}
+                                disabled={downloadingInvoice === order._id}
+                                title="Download invoice"
+                                style={{
+                                  width: 32, height: 32,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  border: '1.5px solid rgba(100,100,100,0.25)', borderRadius: 8,
+                                  background: 'transparent', color: 'var(--text-dark)',
+                                  cursor: downloadingInvoice === order._id ? 'not-allowed' : 'pointer',
+                                  transition: 'all 0.15s', opacity: downloadingInvoice === order._id ? 0.6 : 1,
+                                }}
+                                onMouseEnter={e => { if (downloadingInvoice !== order._id) { e.currentTarget.style.background = 'rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor = '#888'; } }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(100,100,100,0.25)'; }}
+                              >
+                                {downloadingInvoice === order._id
+                                  ? <span className="spinner-border spinner-border-sm" style={{ width: 12, height: 12, borderWidth: '2px' }} />
+                                  : <FileDown size={13} />
+                                }
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
+
                   </div>
                 );
               })}
             </div>
           )}
 
-          {/* ══════════════════════════════════════════════════════════════════
-              Order Detail Modal
-              ══════════════════════════════════════════════════════════════ */}
+          {/* ── Order Detail Modal (unchanged) ── */}
           {selectedOrder && createPortal(
             <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999 }}>
               <div className="modal-dialog modal-dialog-centered modal-lg">
                 <div className="modal-content border-0 card-farm shadow-lg p-4" style={{ background: 'var(--bg-card)' }}>
-
-                  {/* Modal Header */}
                   <div className="modal-header border-0 pb-0">
-                    <h5 className="modal-title fw-bold text-success">
-                      Order Details — {selectedOrder.orderNumber}
-                    </h5>
-                    <button type="button" className="btn-close" onClick={() => setSelectedOrder(null)}
-                      style={{ filter: 'var(--bs-btn-close-filter, none)' }}
-                    />
+                    <h5 className="modal-title fw-bold text-success">Order Details — {selectedOrder.orderNumber}</h5>
+                    <button type="button" className="btn-close" onClick={() => setSelectedOrder(null)} />
                   </div>
-
                   <div className="modal-body pt-3">
-
-                    {/* ── Billing / Payment row ── */}
                     <div className="row g-3 mb-4">
                       <div className="col-md-6">
                         <div className="fw-bold mb-1" style={{ color: 'var(--text-dark)' }}>Billing Address</div>
@@ -860,39 +879,21 @@ const SupplierOrders = () => {
                         </div>
                       </div>
                     </div>
-
-
                     <div className="row g-3 mb-4">
-  <div className="col-md-6">
-    <div
-      className="fw-bold mb-1"
-      style={{ color: 'var(--text-dark)' }}
-    >
-      Buyer Name
-    </div>
-    <div
-      style={{ color: 'var(--text-muted)', fontSize: '13px' }}
-    >
-      {selectedOrder.user?.name || selectedOrder.buyer?.firstName + " " + selectedOrder.buyer?.lastName || 'N/A'}
-    </div>
-  </div>
+                      <div className="col-md-6">
+                        <div className="fw-bold mb-1" style={{ color: 'var(--text-dark)' }}>Buyer Name</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                          {selectedOrder.user?.name || (selectedOrder.buyer?.firstName + ' ' + selectedOrder.buyer?.lastName) || 'N/A'}
+                        </div>
+                      </div>
+                      <div className="col-md-6">
+                        <div className="fw-bold mb-1" style={{ color: 'var(--text-dark)' }}>Phone Number</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                          {selectedOrder.user?.phone || selectedOrder.buyer?.phone || 'N/A'}
+                        </div>
+                      </div>
+                    </div>
 
-  <div className="col-md-6">
-    <div
-      className="fw-bold mb-1"
-      style={{ color: 'var(--text-dark)' }}
-    >
-      Phone Number
-    </div>
-    <div
-      style={{ color: 'var(--text-muted)', fontSize: '13px' }}
-    >
-      {selectedOrder.user?.phone || selectedOrder.buyer?.phone || 'N/A'}
-    </div>
-  </div>
-</div>
-
-                    {/* ── Items table ── */}
                     <h6 className="fw-bold text-success mb-3">Order Items</h6>
                     <div className="table-responsive mb-4">
                       <table className="table table-bordered table-sm align-middle" style={{ fontSize: '13px' }}>
@@ -917,22 +918,8 @@ const SupplierOrders = () => {
                       </table>
                     </div>
 
-                    {/* ══════════════════════════════════════════════════
-                        STATUS STEPPER — the core new feature
-                        Supplier clicks the NEXT node to advance status.
-                        packed → out_for_delivery → delivered
-                        ══════════════════════════════════════════════ */}
-                    <div style={{
-                      background: 'var(--bg-cream)',
-                      border: '1.5px solid var(--border-color)',
-                      borderRadius: '14px',
-                      padding: '16px 18px',
-                      marginBottom: '20px',
-                    }}>
-                      <div style={{
-                        fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)',
-                        textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '14px',
-                      }}>
+                    <div style={{ background: 'var(--bg-cream)', border: '1.5px solid var(--border-color)', borderRadius: '14px', padding: '16px 18px', marginBottom: '20px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '14px' }}>
                         Order Progress — click the next step to update
                       </div>
                       <StatusStepBar
@@ -943,7 +930,6 @@ const SupplierOrders = () => {
                       />
                     </div>
 
-                    {/* ── Optional comment ── */}
                     {selectedOrder.status !== 'delivered' && selectedOrder.status !== 'cancelled' && (
                       <div className="mb-4">
                         <label className="form-label fw-semibold" style={{ color: 'var(--text-dark)', fontSize: '13px' }}>
@@ -956,17 +942,11 @@ const SupplierOrders = () => {
                           value={comment}
                           onChange={(e) => setComment(e.target.value)}
                           disabled={isModalBusy}
-                          style={{
-                            background: 'var(--bg-cream)',
-                            color: 'var(--text-dark)',
-                            borderColor: 'var(--border-color)',
-                            fontSize: '13px',
-                          }}
+                          style={{ background: 'var(--bg-cream)', color: 'var(--text-dark)', borderColor: 'var(--border-color)', fontSize: '13px' }}
                         />
                       </div>
                     )}
 
-                    {/* ── Cancel button (bottom-left) ── */}
                     <div className="d-flex justify-content-between align-items-center">
                       <div>
                         {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
@@ -981,15 +961,11 @@ const SupplierOrders = () => {
                       </div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                         Current status:{' '}
-                        <span style={{
-                          fontWeight: 700,
-                          color: STATUS_COLORS[selectedOrder.status] || 'var(--text-dark)',
-                        }}>
+                        <span style={{ fontWeight: 700, color: STATUS_COLORS[selectedOrder.status] || 'var(--text-dark)' }}>
                           {selectedOrder.status.replace(/_/g, ' ')}
                         </span>
                       </div>
                     </div>
-
                   </div>
                 </div>
               </div>

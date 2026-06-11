@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/api.js';
 import {
   Plus, Edit2, Trash2, Tag, Archive,
   Check, X, Upload, Loader2, CheckCircle, AlertCircle,
-  Sun, Moon,
+  Sun, Moon, Calendar, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar.jsx';
-import Sidebar from '../../components/layout/Sidebar.jsx';
+// import Sidebar from '../../components/layout/Sidebar.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
 
 // ─────────────────────────────────────────────
@@ -69,6 +69,216 @@ const getProductDiscountPct = (product) =>
   product.discount?.isActive && product.discount?.type === 'percentage'
     ? (parseFloat(product.discount.value) || 0)
     : 0;
+
+// ─────────────────────────────────────────────
+// Date Picker Dropdown Component
+// ─────────────────────────────────────────────
+
+const DatePickerDropdown = ({ availableDateKeys, selectedDateKey, onSelect, onClear }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const [open, setOpen] = useState(false);
+  const [calMonth, setCalMonth] = useState(() => {
+    if (selectedDateKey) return new Date(selectedDateKey + 'T00:00:00');
+    return new Date();
+  });
+  const ref = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
+  const year = calMonth.getFullYear();
+  const month = calMonth.getMonth();
+  const totalDays = daysInMonth(year, month);
+  const startDay = firstDayOfMonth(year, month);
+
+  const prevMonth = () => setCalMonth(new Date(year, month - 1, 1));
+  const nextMonth = () => setCalMonth(new Date(year, month + 1, 1));
+
+  const isoKey = (d) => {
+    const mm = String(month + 1).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    return `${year}-${mm}-${dd}`;
+  };
+
+  const hasProducts = (d) => availableDateKeys.includes(isoKey(d));
+
+  const label = selectedDateKey
+    ? new Date(selectedDateKey + 'T00:00:00').toLocaleDateString('default', { day: 'numeric', month: 'short', year: 'numeric' })
+    : 'Filter by date';
+
+  // Theme-aware tokens
+  const dropdownBg    = isDark ? '#1e2b1e' : '#fff';
+  const dropdownBorder = isDark ? 'rgba(74,124,89,0.30)' : 'rgba(74,124,89,0.18)';
+  const dropdownShadow = isDark ? '0 8px 32px rgba(0,0,0,0.45)' : '0 8px 32px rgba(0,0,0,0.13)';
+  const headerColor   = isDark ? '#d4e8d4' : '#222';
+  const navBtnColor   = isDark ? '#6a9b7a' : '#8a9b8a';
+  const weekdayColor  = isDark ? '#5a7a5a' : '#aaa';
+  const inactiveDayColor = isDark ? '#3a4a3a' : '#ccc';
+  const hintColor     = isDark ? '#5a7a5a' : '#aaa';
+  const activeDayBg   = isDark ? 'rgba(74,124,89,0.22)' : 'rgba(74,124,89,0.12)';
+  const clearBtnColor = isDark ? '#6a7a6a' : '#aaa';
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      {/* Trigger button */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 7,
+          background: selectedDateKey
+            ? isDark ? 'rgba(74,124,89,0.2)' : 'rgba(74,124,89,0.1)'
+            : isDark ? 'rgba(255,255,255,0.04)' : 'transparent',
+          border: `1.5px solid ${selectedDateKey ? 'var(--primary-green)' : isDark ? 'rgba(74,124,89,0.35)' : 'rgba(74,124,89,0.25)'}`,
+          borderRadius: 10,
+          padding: '5px 13px',
+          fontSize: 13,
+          fontWeight: 600,
+          color: selectedDateKey ? 'var(--primary-green)' : isDark ? '#6a9b7a' : '#8a9b8a',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+          transition: 'all 0.15s',
+        }}
+      >
+        <Calendar size={15} style={{ flexShrink: 0 }} />
+        {label}
+        {selectedDateKey && (
+          <span
+            onClick={(e) => { e.stopPropagation(); onClear(); }}
+            style={{
+              marginLeft: 2,
+              lineHeight: 1,
+              color: clearBtnColor,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <X size={13} />
+          </span>
+        )}
+      </button>
+
+      {/* Dropdown calendar */}
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            zIndex: 9999,
+            background: dropdownBg,
+            border: `1px solid ${dropdownBorder}`,
+            borderRadius: 14,
+            boxShadow: dropdownShadow,
+            padding: '14px 16px 12px',
+            minWidth: 260,
+            userSelect: 'none',
+          }}
+        >
+          {/* Month nav */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <button onClick={prevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: navBtnColor, padding: 2 }}>
+              <ChevronLeft size={16} />
+            </button>
+            <span style={{ fontSize: 13, fontWeight: 700, color: headerColor }}>
+              {calMonth.toLocaleString('default', { month: 'long' })} {year}
+            </span>
+            <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: navBtnColor, padding: 2 }}>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Day-of-week headers */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
+            {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
+              <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: weekdayColor, padding: '2px 0' }}>{d}</div>
+            ))}
+          </div>
+
+          {/* Thin divider */}
+          <div style={{ height: 1, background: isDark ? 'rgba(74,124,89,0.15)' : 'rgba(74,124,89,0.08)', marginBottom: 6 }} />
+
+          {/* Calendar grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+            {/* Empty cells before first day */}
+            {Array.from({ length: startDay }).map((_, i) => <div key={`e-${i}`} />)}
+
+            {Array.from({ length: totalDays }, (_, i) => i + 1).map((d) => {
+              const key = isoKey(d);
+              const active = hasProducts(d);
+              const selected = key === selectedDateKey;
+              return (
+                <button
+                  key={d}
+                  onClick={() => {
+                    if (!active) return;
+                    onSelect(key);
+                    setOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    aspectRatio: '1',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: selected ? 800 : active ? 600 : 400,
+                    cursor: active ? 'pointer' : 'default',
+                    background: selected
+                      ? 'var(--primary-green)'
+                      : active
+                      ? activeDayBg
+                      : 'transparent',
+                    color: selected
+                      ? '#fff'
+                      : active
+                      ? 'var(--primary-green)'
+                      : inactiveDayColor,
+                    position: 'relative',
+                    transition: 'all 0.12s',
+                  }}
+                >
+                  {d}
+                  {/* Dot indicator for dates with products */}
+                  {active && !selected && (
+                    <span style={{
+                      position: 'absolute',
+                      bottom: 2,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: 4,
+                      height: 4,
+                      borderRadius: '50%',
+                      background: 'var(--primary-green)',
+                    }} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Footer hint */}
+          <div style={{ marginTop: 10, fontSize: 11, color: hintColor, textAlign: 'center', borderTop: `1px solid ${isDark ? 'rgba(74,124,89,0.12)' : 'rgba(74,124,89,0.07)'}`, paddingTop: 8 }}>
+            Highlighted dates have products
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ─────────────────────────────────────────────
 // Sub-components
@@ -180,6 +390,9 @@ const SupplierInventory = () => {
   const [bulkProducts, setBulkProducts] = useState([]);
   const [saveProgress, setSaveProgress] = useState(null);
 
+  // ── Date filter ──
+  const [filterDateKey, setFilterDateKey] = useState(null);
+
   // ── Group discounts — persisted in localStorage ──
   const [groupDiscounts, setGroupDiscounts] = useState(() => {
     try {
@@ -213,9 +426,18 @@ const SupplierInventory = () => {
     },
   });
 
+  // Derive all available date keys from product data
+  const allGrouped = groupProductsByDate(productData || []);
+  const availableDateKeys = allGrouped
+    .map(g => g.dateKey)
+    .filter(k => k !== 'unknown');
+
+  // Apply date filter
+  const displayedGroups = filterDateKey
+    ? allGrouped.filter(g => g.dateKey === filterDateKey)
+    : allGrouped;
+
   // Auto-seed group discounts from product data on first load.
-  // FIX: p.discount is a subdocument { isActive, type, value } — not a plain
-  // number, so we must use getProductDiscountPct() instead of parseFloat(p.discount).
   useEffect(() => {
     if (!productData?.length) return;
     const grouped = groupProductsByDate(productData);
@@ -223,7 +445,7 @@ const SupplierInventory = () => {
       const next = { ...prev };
       let changed = false;
       grouped.forEach(({ dateKey, products: group }) => {
-        if (next[dateKey]) return; // don't overwrite user-set values
+        if (next[dateKey]) return;
         const discounts = group.map(p => getProductDiscountPct(p));
         const allSame = discounts.every(d => d > 0 && d === discounts[0]);
         if (allSame) { next[dateKey] = discounts[0]; changed = true; }
@@ -252,7 +474,6 @@ const SupplierInventory = () => {
     onSuccess: () => queryClient.invalidateQueries(['supplierProducts']),
   });
 
-  // Saves a bulk discount % to every product in a date group
   const bulkDiscountMutation = useMutation({
     mutationFn: async ({ products, discount }) => {
       await Promise.all(
@@ -286,7 +507,6 @@ const SupplierInventory = () => {
 
   const openEditModal = (product) => {
     setEditingProduct(product);
-    // Extract the percentage value from the discount subdocument
     const discountValue = product.discount?.isActive && product.discount?.type === 'percentage'
       ? String(product.discount.value ?? '')
       : '';
@@ -303,7 +523,6 @@ const SupplierInventory = () => {
     });
   };
 
-  // Accepts current form snapshot to avoid stale closure
   const buildFormData = (snapshot) => {
     const fd = new FormData();
     fd.append('name',                  snapshot.name.trim());
@@ -400,7 +619,7 @@ const SupplierInventory = () => {
 
   return (
     <div className="app-container">
-      <Sidebar />
+      {/* <Sidebar /> */}
       <div className="main-content">
         <Navbar />
 
@@ -423,7 +642,7 @@ const SupplierInventory = () => {
             <div className="card-farm p-5 text-center text-muted">No products found in inventory</div>
           ) : (
             <div className="d-flex flex-column gap-4">
-              {groupProductsByDate(productData).map(({ dateKey, products: group }) => {
+              {displayedGroups.map(({ dateKey, products: group }) => {
                 const label = dateKey !== 'unknown' ? formatDateLabel(dateKey) : null;
                 const gDiscount = parseFloat(groupDiscounts[dateKey]) || 0;
 
@@ -458,6 +677,14 @@ const SupplierInventory = () => {
 
                           {/* Divider */}
                           <div style={{ flex: 1, height: 1, background: 'rgba(74,124,89,0.15)' }} />
+
+                          {/* ── Date Picker ── */}
+                          <DatePickerDropdown
+                            availableDateKeys={availableDateKeys}
+                            selectedDateKey={filterDateKey}
+                            onSelect={(key) => setFilterDateKey(key)}
+                            onClear={() => setFilterDateKey(null)}
+                          />
 
                           {/* ── Bulk discount input ── */}
                           <div className="d-flex align-items-center gap-2 px-3 py-2">
@@ -534,79 +761,185 @@ const SupplierInventory = () => {
                     </div>
 
                     {/* ── Products table ── */}
-                    <div className="card-farm p-3">
-                      <div className="table-responsive">
-                        <table className="table table-hover align-middle mb-0" style={{ fontSize: 14 }}>
-                          <thead>
-                            <tr>
-                              <th>Product Image</th>
-                              <th>Product Name</th>
-                              <th>Category</th>
-                              <th>Unit Price</th>
-                              <th>Stock Quantity</th>
-                              <th>Status</th>
-                              <th>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {group.map((product) => {
-                              // FIX: use subdocument-aware helper instead of parseFloat(product.discount)
-                              const productDiscount = getProductDiscountPct(product);
-                              const effectiveDiscount = productDiscount > 0 ? productDiscount : gDiscount;
-                              const discountSource =
-                                productDiscount > 0 && gDiscount > 0 ? 'own'
-                                : productDiscount === 0 && gDiscount > 0 ? 'bulk'
-                                : null;
-
-                              return (
-                                <tr key={product._id}>
-                                  <td>
-                                    <img
-                                      src={product.images?.[0]?.url || 'https://via.placeholder.com/80?text=No+Image'}
-                                      alt={product.name}
-                                      className="rounded-3"
-                                      width="50"
-                                      height="50"
-                                      style={{ objectFit: 'cover' }}
-                                    />
-                                  </td>
-                                  <td className="fw-semibold">{product.name}</td>
-                                  <td>{product.category?.name || 'Produce'}</td>
-                                  <td>
-                                    <PriceCell
-                                      price={product.price}
-                                      unit={product.unit}
-                                      effectiveDiscount={effectiveDiscount}
-                                      discountSource={discountSource}
-                                    />
-                                  </td>
-                                  <td>{product.stock?.quantity} {product.unit}</td>
-                                  <td>
-                                    <span className={`badge ${product.stock?.quantity > 10 ? 'bg-success' : 'bg-warning text-dark'}`}>
-                                      {(product.stockStatus || 'in_stock').replace(/_/g, ' ')}
-                                    </span>
-                                  </td>
-                                  <td>
-                                    <div className="d-flex gap-2">
-                                      <button className="btn btn-outline-success btn-sm" onClick={() => openEditModal(product)}>
-                                        <Edit2 size={14} />
-                                      </button>
-                                      <button className="btn btn-outline-danger btn-sm" onClick={() => deleteMutation.mutate(product._id)}>
-                                        <Trash2 size={14} />
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                    <div className="card-farm" style={{ overflow: 'hidden' }}>
+                      {/* Header */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '64px 1fr 120px 180px 130px 120px 88px',
+                        padding: '10px 20px',
+                        gap: 12,
+                        background: 'rgba(74,124,89,0.06)',
+                        borderBottom: '1px solid rgba(74,124,89,0.12)',
+                      }}>
+                        {['Image','Product','Category','Price','Stock','Status',''].map((h, i) => (
+                          <div key={i} style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                            color: 'var(--primary-green)',
+                            opacity: 0.75,
+                          }}>{h}</div>
+                        ))}
                       </div>
+
+                      {/* Rows */}
+                      {group.map((product, rowIdx) => {
+                        const productDiscount = getProductDiscountPct(product);
+                        const effectiveDiscount = productDiscount > 0 ? productDiscount : gDiscount;
+                        const discountSource =
+                          productDiscount > 0 && gDiscount > 0 ? 'own'
+                          : productDiscount === 0 && gDiscount > 0 ? 'bulk'
+                          : null;
+                        const isLast = rowIdx === group.length - 1;
+
+                        return (
+                          <div
+                            key={product._id}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '64px 1fr 120px 180px 130px 120px 88px',
+                              padding: '13px 20px',
+                              gap: 12,
+                              alignItems: 'center',
+                              borderBottom: isLast ? 'none' : '1px solid rgba(74,124,89,0.07)',
+                              transition: 'background 0.15s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(74,124,89,0.04)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          >
+                            {/* Image */}
+                            <div>
+                              <img
+                                src={product.images?.[0]?.url || 'https://via.placeholder.com/80?text=No+Image'}
+                                alt={product.name}
+                                style={{
+                                  width: 46, height: 46,
+                                  objectFit: 'cover',
+                                  borderRadius: 10,
+                                  border: '1.5px solid rgba(74,124,89,0.15)',
+                                  display: 'block',
+                                }}
+                              />
+                            </div>
+
+                            {/* Product name + description */}
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-dark)', lineHeight: 1.3 }}>
+                                {product.name}
+                              </div>
+                              {product.description && (
+                                <div style={{
+                                  fontSize: 11, color: '#8a9b8a', marginTop: 2,
+                                  overflow: 'hidden', textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap', maxWidth: 180,
+                                }}>
+                                  {product.description}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Category pill */}
+                            <div>
+                              <span style={{
+                                display: 'inline-block', fontSize: 11, fontWeight: 600,
+                                color: 'var(--primary-green)', background: 'rgba(74,124,89,0.09)',
+                                borderRadius: 20, padding: '3px 10px',
+                              }}>
+                                {product.category?.name || 'Produce'}
+                              </span>
+                            </div>
+
+                            {/* Price */}
+                            <div>
+                              <PriceCell
+                                price={product.price}
+                                unit={product.unit}
+                                effectiveDiscount={effectiveDiscount}
+                                discountSource={discountSource}
+                              />
+                            </div>
+
+                            {/* Stock */}
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-dark)' }}>
+                              {product.stock?.quantity}
+                              <span style={{ fontSize: 11, fontWeight: 400, color: '#8a9b8a', marginLeft: 4 }}>
+                                {product.unit}
+                              </span>
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                              {product.stock?.quantity > 10 ? (
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                                  fontSize: 11, fontWeight: 600, color: '#2d7a47',
+                                  background: 'rgba(45,122,71,0.1)', borderRadius: 20, padding: '3px 10px',
+                                }}>
+                                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d7a47', flexShrink: 0 }} />
+                                  In Stock
+                                </span>
+                              ) : (
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                                  fontSize: 11, fontWeight: 600, color: '#a06000',
+                                  background: 'rgba(160,96,0,0.1)', borderRadius: 20, padding: '3px 10px',
+                                }}>
+                                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#e07b39', flexShrink: 0 }} />
+                                  Low Stock
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Actions */}
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button
+                                onClick={() => openEditModal(product)}
+                                title="Edit"
+                                style={{
+                                  width: 32, height: 32,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  border: '1.5px solid rgba(74,124,89,0.3)', borderRadius: 8,
+                                  background: 'transparent', color: 'var(--primary-green)',
+                                  cursor: 'pointer', transition: 'all 0.15s',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,124,89,0.1)'; e.currentTarget.style.borderColor = 'var(--primary-green)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(74,124,89,0.3)'; }}
+                              >
+                                <Edit2 size={13} />
+                              </button>
+                              <button
+                                onClick={() => deleteMutation.mutate(product._id)}
+                                title="Delete"
+                                style={{
+                                  width: 32, height: 32,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  border: '1.5px solid rgba(220,53,69,0.25)', borderRadius: 8,
+                                  background: 'transparent', color: '#dc3545',
+                                  cursor: 'pointer', transition: 'all 0.15s',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,53,69,0.08)'; e.currentTarget.style.borderColor = '#dc3545'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(220,53,69,0.25)'; }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
 
                   </div>
                 );
               })}
+
+              {/* Empty state when filter yields no results */}
+              {filterDateKey && displayedGroups.length === 0 && (
+                <div className="card-farm p-5 text-center text-muted">
+                  No products found for the selected date.
+                  <button className="btn btn-link p-0 ms-2" onClick={() => setFilterDateKey(null)}>Clear filter</button>
+                </div>
+              )}
             </div>
           )}
         </div>
