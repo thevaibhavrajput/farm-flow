@@ -9,6 +9,7 @@ import {
   ChevronDown, ChevronUp, Home, Building2,
 } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar.jsx';
+import { useToast } from '../../components/layout/Toast.jsx';
 // import Sidebar from '../../components/layout/Sidebar.jsx';
 
 /* ─────────────────────────────────────────────────────────────
@@ -246,6 +247,7 @@ const LocationBlock = ({ street, city, state, postalCode, onChange, onSave, savi
 const BuyerCart = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const showToast = useToast();
   const { cart, loading } = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.auth);
 
@@ -326,7 +328,16 @@ const BuyerCart = () => {
 
         if (paymentMethod === 'online' && razorpay) {
           const loaded = await loadRazorpayScript();
-          if (!loaded) { alert('Razorpay SDK failed to load.'); setCheckoutLoading(false); return; }
+          if (!loaded) {
+            showToast({
+              title: 'Checkout Unavailable',
+              sub: 'Razorpay SDK failed to load.',
+              variant: 'error',
+              duration: 3500,
+            });
+            setCheckoutLoading(false);
+            return;
+          }
 
           const options = {
             key: razorpay.keyId,
@@ -342,20 +353,45 @@ const BuyerCart = () => {
                   razorpayPaymentId: res.razorpay_payment_id,
                   razorpaySignature: res.razorpay_signature,
                 });
-                if (v.data.success) { alert('Payment verified!'); navigate('/orders'); }
-              } catch { alert('Payment verification failed.'); }
+                if (v.data.success) {
+                  showToast({
+                    title: 'Payment Verified',
+                    sub: 'Your order has been placed successfully.',
+                    variant: 'success',
+                    duration: 3000,
+                  });
+                  navigate('/orders');
+                }
+              } catch {
+                showToast({
+                  title: 'Payment Verification Failed',
+                  sub: 'Please try again or contact support.',
+                  variant: 'error',
+                  duration: 3500,
+                });
+              }
             },
             prefill: { name: user.fullName, email: user.email, contact: user.phone || '' },
             theme: { color: '#2e7d32' },
           };
           new window.Razorpay(options).open();
         } else {
-          alert('Order placed successfully (Cash on Delivery)!');
+          showToast({
+            title: 'Order Placed',
+            sub: 'Cash on Delivery order placed successfully.',
+            variant: 'success',
+            duration: 3000,
+          });
           navigate('/orders');
         }
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Checkout failed');
+      showToast({
+        title: 'Checkout Failed',
+        sub: err.response?.data?.message || 'Checkout failed',
+        variant: 'error',
+        duration: 3500,
+      });
     } finally {
       setCheckoutLoading(false);
     }
