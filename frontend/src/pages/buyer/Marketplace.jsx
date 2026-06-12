@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import { addItemToCart } from '../../store/slices/cartSlice.js';
@@ -9,6 +9,7 @@ import Navbar from '../../components/layout/Navbar.jsx';
 import { useToast } from '../../components/layout/Toast.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { useNavigate } from 'react-router-dom';
+import { useSocket } from '../../context/SocketContext.jsx';
 
 
 /* ─── Theme token factory ───────────────────────────────────────────────
@@ -198,6 +199,13 @@ const ProductCard = ({ p, onAdd, adding, t }) => {
   const finalPrice = discountPct > 0
     ? (p.price - (p.price * discountPct / 100)).toFixed(2)
     : null;
+  const availableStock = p.stock?.trackInventory === false ? Number.POSITIVE_INFINITY : Math.max(0, p.stock?.quantity || 0);
+  const outOfStock = availableStock === 0;
+  const stockLabel = p.stock?.trackInventory === false
+    ? 'Stock available'
+    : outOfStock
+      ? 'Out of stock'
+      : `Stock: ${availableStock}`;
 
   const catMap = {
     Vegetables: { color: t.catVegColor, bg: t.catVegBg, border: t.catVegBorder, icon: <Leaf size={16}/> },
@@ -251,26 +259,28 @@ const ProductCard = ({ p, onAdd, adding, t }) => {
             ) : (
               <span style={{ fontSize:18, fontWeight:800, color:t.textPrice }}>₹{p.price}</span>
             )}
-            <div style={{ fontSize:11, color:t.textMuted, marginTop:1 }}>per {p.unit} · Stock: {p.stock?.quantity}</div>
+            <div style={{ fontSize:11, color: outOfStock ? '#dc2626' : t.textMuted, marginTop:1, fontWeight: outOfStock ? 700 : 400 }}>
+              per {p.unit} · {stockLabel}
+            </div>
           </div>
 
           <button
             onClick={()=>onAdd(p)}
-            disabled={adding===p._id}
+            disabled={adding===p._id || outOfStock}
             style={{
-              background: adding===p._id ? t.accentBtnDis : t.accentBtn,
-              color: adding===p._id ? t.accent : '#fff',
-              border: adding===p._id ? `1px solid ${t.accent}33` : 'none',
+              background: adding===p._id || outOfStock ? t.accentBtnDis : t.accentBtn,
+              color: adding===p._id || outOfStock ? t.accent : '#fff',
+              border: adding===p._id || outOfStock ? `1px solid ${t.accent}33` : 'none',
               borderRadius:12, padding:'9px 16px', fontSize:13, fontWeight:700, cursor:'pointer',
               display:'flex', alignItems:'center', gap:5,
-              boxShadow: adding===p._id ? 'none' : t.accentBtnShadow,
+              boxShadow: adding===p._id || outOfStock ? 'none' : t.accentBtnShadow,
               transition:'transform 0.18s ease', whiteSpace:'nowrap',
             }}
-            onMouseEnter={e=>{ if(adding!==p._id){ e.currentTarget.style.transform='scale(1.05)'; }}}
+            onMouseEnter={e=>{ if(adding!==p._id && !outOfStock){ e.currentTarget.style.transform='scale(1.05)'; }}}
             onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}
           >
             <ShoppingCart size={14}/>
-            {adding===p._id ? 'Adding…' : '+ Add'}
+            {outOfStock ? 'Out of stock' : adding===p._id ? 'Adding…' : '+ Add'}
           </button>
         </div>
       </div>
@@ -344,6 +354,7 @@ const BuyerMarketplace = () => {
   const { theme }   = useTheme();                // ← reads the same context Navbar writes to
   const isDark      = theme === 'dark';
   const t           = getTokens(isDark);          // ← all colour decisions come from here
+  const socket      = useSocket();
 
     const recommendationRef = React.useRef(null);
 
@@ -374,6 +385,20 @@ const BuyerMarketplace = () => {
     ],
   });
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleStockUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ['marketplaceProducts'] });
+    };
+
+    socket.on('stock:updated', handleStockUpdate);
+
+    return () => {
+      socket.off('stock:updated', handleStockUpdate);
+    };
+  }, [socket, queryClient]);
+
    const scrollRecommendations = () => {
     recommendationRef.current?.scrollBy({
       left: 320,
@@ -392,6 +417,7 @@ const BuyerMarketplace = () => {
       setAdding(product._id);
       await dispatch(addItemToCart({ productId: product._id, quantity: 1 }));
       showToast({ title:'Added to Cart!', sub:`${product.name} · 1 ${product.unit}`, variant:'success', action:{ label:'View Cart', onClick:()=>navigate('/cart') }, duration:3000 });
+      queryClient.invalidateQueries({ queryKey: ['marketplaceProducts'] });
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     } catch (err) {
       console.error(err);

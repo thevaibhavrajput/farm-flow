@@ -47,6 +47,12 @@ const STATUS_COLORS = {
   cancelled:        '#ef4444',
 };
 
+const getOrderTableTotal = (order) => {
+  const subtotal = order.pricing?.subtotal ?? 0;
+  const discount = order.pricing?.discount ?? 0;
+  return subtotal - discount;
+};
+
 // Grid columns: Order No. | Supplier | Items | Total | Status | Actions
 const GRID_COLS = '160px 1fr 110px 120px 160px 90px';
 
@@ -180,6 +186,7 @@ const BuyerOrders = () => {
                       {group.map((order, rowIdx) => {
                         const isLast    = rowIdx === group.length - 1;
                         const statusCol = STATUS_COLORS[order.status] || 'var(--primary-green)';
+                        const tableTotal = getOrderTableTotal(order);
 
                         return (
                           <div
@@ -235,7 +242,7 @@ const BuyerOrders = () => {
 
                             {/* Total */}
                             <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-dark)' }}>
-                              ₹{order.pricing?.total}
+                              ₹{tableTotal.toFixed(2)}
                             </div>
 
                             {/* Status badge */}

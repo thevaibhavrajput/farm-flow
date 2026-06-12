@@ -151,19 +151,56 @@ const SupplierDashboard = () => {
                 <h5 className="fw-bold text-success mb-3 d-flex align-items-center gap-2">
                   <Sparkles size={20} /> AI Smart Suggestions & Low Stock Warnings
                 </h5>
-                <div className="row g-3">
-                  {suggestions.length === 0 ? (
-                    <div className="col-12 text-muted">All stock levels look great! No suggestions.</div>
-                  ) : (
-                    suggestions.slice(0, 3).map((item, idx) => (
-                      <div key={idx} className="col-md-4">
-                        <div className={`p-2.5 rounded-3 bg-white border-start border-4 ${item.type === 'CRITICAL' ? 'border-danger' : 'border-warning'}`} style={{ fontSize: '13px' }}>
-                          <span className="fw-bold text-dark">{item.type}:</span> {item.message}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                
+<div className="d-flex flex-column gap-2">
+  {suggestions.length === 0 ? (
+    <div style={{ fontSize: 13, color: '#8a9b8a' }}>
+      All stock levels look great! No suggestions.
+    </div>
+  ) : (
+    suggestions.slice(0, 3).map((s, i) => (
+      <div key={i} style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '8px 14px',
+        borderRadius: 10,
+        background: s.bgColor,
+        border: `1px solid ${s.borderColor}`,
+      }}>
+        {/* Dot */}
+        <span style={{
+          width: 7, height: 7, borderRadius: '50%',
+          background: s.dotColor, flexShrink: 0,
+        }} />
+
+        {/* Badge */}
+        <span style={{
+          fontSize: 11, fontWeight: 700,
+          color: s.labelColor,
+          background: s.labelBg,
+          borderRadius: 20, padding: '2px 9px',
+          whiteSpace: 'nowrap', flexShrink: 0,
+        }}>
+          {s.badge}
+        </span>
+
+        {/* Product name */}
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-dark)', flexShrink: 0 }}>
+          {s.productName}
+        </span>
+
+        {/* Separator */}
+        <span style={{ color: 'rgba(74,124,89,0.35)', fontSize: 12, flexShrink: 0 }}>·</span>
+
+        {/* Message */}
+        <span style={{ fontSize: 13, color: '#8a9b8a', fontWeight: 400 }}>
+          {s.message}
+        </span>
+      </div>
+    ))
+  )}
+</div>
               </div>
 
               {/* Charts Section */}
@@ -183,45 +220,105 @@ const SupplierDashboard = () => {
               </div>
 
               {/* AI Demand Prediction Table */}
-              <div className="card-farm p-3">
-                <h5 className="fw-bold text-success mb-3 d-flex align-items-center gap-2">
-                  <Activity size={20} /> AI-Based Weekly Demand Prediction & Inventory Plan
-                </h5>
-                <div className="table-responsive">
-                  <table className="table table-hover align-middle mb-0" style={{ fontSize: '14px' }}>
-                    <thead>
-                      <tr>
-                        <th>Product Name</th>
-                        <th>Current Stock</th>
-                        <th>Weekly Sales Avg</th>
-                        <th>AI Predicted Next Week</th>
-                        <th>Reorder Recommendations</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {predictions.length === 0 ? (
-                        <tr>
-                          <td colSpan="5" className="text-center text-muted">No sales prediction data available yet</td>
-                        </tr>
-                      ) : (
-                        predictions.map((p) => (
-                          <tr key={p.productId}>
-                            <td className="fw-semibold">{p.name}</td>
-                            <td>{p.currentStock} {p.unit}</td>
-                            <td>{p.averageWeeklySales} {p.unit}</td>
-                            <td className="text-success fw-bold">{p.predictedNextWeekDemand} {p.unit}</td>
-                            <td>
-                              <span className={`badge ${p.recommendation === 'REORDER_NOW' ? 'bg-danger' : p.recommendation === 'MONITOR' ? 'bg-warning text-dark' : 'bg-success'}`}>
-                                {p.recommendation}
-                              </span>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+             <div className="card-farm" style={{ overflow: 'hidden' }}>
+  <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(74,124,89,0.12)' }}>
+    <h5 className="fw-bold mb-0 d-flex align-items-center gap-2" style={{ color: 'var(--primary-green)' }}>
+      <Activity size={20} /> AI-Based Weekly Demand Prediction & Inventory Plan
+    </h5>
+  </div>
+
+  {/* Table Header */}
+  <div style={{
+    display: 'grid',
+    gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr',
+    padding: '10px 20px',
+    gap: 12,
+    background: 'rgba(74,124,89,0.06)',
+    borderBottom: '1px solid rgba(74,124,89,0.12)',
+  }}>
+    {['Product Name', 'Current Stock', 'Weekly Sales Avg', 'AI Predicted Next Week', 'Recommendation'].map((h, i) => (
+      <div key={i} style={{
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+        color: 'var(--primary-green)',
+        opacity: 0.75,
+      }}>{h}</div>
+    ))}
+  </div>
+
+  {/* Rows */}
+  {predictions.length === 0 ? (
+    <div style={{ padding: '32px 20px', textAlign: 'center', color: '#8a9b8a', fontSize: 14 }}>
+      No sales prediction data available yet
+    </div>
+  ) : (
+    predictions.map((p, idx) => {
+      const isLast = idx === predictions.length - 1;
+
+      const rec = p.recommendation === 'REORDER_NOW'
+        ? { label: 'Reorder Now', color: '#dc3545', bg: 'rgba(220,53,69,0.1)', dot: '#dc3545' }
+        : p.recommendation === 'MONITOR'
+        ? { label: 'Monitor',     color: '#a06000', bg: 'rgba(160,96,0,0.1)',  dot: '#e07b39' }
+        : { label: 'Sufficient',  color: '#2d7a47', bg: 'rgba(45,122,71,0.1)', dot: '#2d7a47' };
+
+      return (
+        <div
+          key={p.productId}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr',
+            padding: '13px 20px',
+            gap: 12,
+            alignItems: 'center',
+            borderBottom: isLast ? 'none' : '1px solid rgba(74,124,89,0.07)',
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(74,124,89,0.04)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        >
+          {/* Product Name */}
+          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-dark)' }}>
+            {p.name}
+          </div>
+
+          {/* Current Stock */}
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-dark)' }}>
+            {p.currentStock}
+            <span style={{ fontSize: 11, fontWeight: 400, color: '#8a9b8a', marginLeft: 4 }}>{p.unit}</span>
+          </div>
+
+          {/* Weekly Sales Avg */}
+          <div style={{ fontSize: 13, color: '#8a9b8a', fontWeight: 500 }}>
+            {p.averageWeeklySales}
+            <span style={{ fontSize: 11, marginLeft: 4 }}>{p.unit}</span>
+          </div>
+
+          {/* AI Predicted */}
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary-green)' }}>
+            {p.predictedNextWeekDemand}
+            <span style={{ fontSize: 11, fontWeight: 400, color: '#8a9b8a', marginLeft: 4 }}>{p.unit}</span>
+          </div>
+
+          {/* Recommendation pill */}
+          <div>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              fontSize: 11, fontWeight: 600,
+              color: rec.color,
+              background: rec.bg,
+              borderRadius: 20, padding: '3px 10px',
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: rec.dot, flexShrink: 0 }} />
+              {rec.label}
+            </span>
+          </div>
+        </div>
+      );
+    })
+  )}
+</div>
             </>
           )}
         </div>

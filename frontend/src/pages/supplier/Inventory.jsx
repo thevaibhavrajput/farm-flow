@@ -10,6 +10,7 @@ import {
 import Navbar from '../../components/layout/Navbar.jsx';
 // import Sidebar from '../../components/layout/Sidebar.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import { useSocket } from '../../context/SocketContext.jsx';
 
 // ─────────────────────────────────────────────
 // Pure helpers
@@ -378,6 +379,7 @@ const EMPTY_FORM = () => ({
 const SupplierInventory = () => {
   const queryClient = useQueryClient();
   const { theme, toggleTheme } = useTheme();
+  const socket = useSocket();
   const today = getCurrentDate();
 
   // ── Modal / editing state ──
@@ -457,6 +459,20 @@ const SupplierInventory = () => {
       return prev;
     });
   }, [productData]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleStockUpdate = () => {
+      queryClient.invalidateQueries(['supplierProducts']);
+    };
+
+    socket.on('stock:updated', handleStockUpdate);
+
+    return () => {
+      socket.off('stock:updated', handleStockUpdate);
+    };
+  }, [socket, queryClient]);
 
   // ── Mutations ──
   const addMutation = useMutation({

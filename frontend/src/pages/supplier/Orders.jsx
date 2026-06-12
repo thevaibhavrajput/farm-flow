@@ -72,6 +72,12 @@ const STATUS_COLORS = {
   cancelled:        '#ef4444',
 };
 
+const getOrderTableTotal = (order) => {
+  const subtotal = order.pricing?.subtotal ?? 0;
+  const discount = order.pricing?.discount ?? 0;
+  return subtotal - discount;
+};
+
 const STATUS_PIPELINE = [
   { key: 'pending',          label: 'Pending',          icon: '🕐' },
   { key: 'confirmed',        label: 'Confirmed',        icon: '✅' },
@@ -722,6 +728,7 @@ const SupplierOrders = () => {
                       {group.map((order, rowIdx) => {
                         const isLast     = rowIdx === group.length - 1;
                         const statusCol  = STATUS_COLORS[order.status] || 'var(--primary-green)';
+                        const tableTotal = getOrderTableTotal(order);
 
                         return (
                           <div
@@ -773,7 +780,7 @@ const SupplierOrders = () => {
 
                             {/* Total */}
                             <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-dark)' }}>
-                              ₹{order.pricing?.total}
+                              ₹{tableTotal.toFixed(2)}
                             </div>
 
                             {/* Payment method pill */}
