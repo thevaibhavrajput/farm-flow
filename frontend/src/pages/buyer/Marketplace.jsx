@@ -468,7 +468,7 @@ const BuyerMarketplace = () => {
             ))}
             {isDark && <div style={{ position:'absolute', inset:0, backgroundImage:'linear-gradient(rgba(74,222,128,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(74,222,128,0.03) 1px,transparent 1px)', backgroundSize:'32px 32px', borderRadius:24, pointerEvents:'none' }}/>}
 
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:20, position:'relative', zIndex:1 }}>
+            <div className="marketplace-hero-row" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:20, position:'relative', zIndex:1 }}>
               <div>
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
                   <Leaf size={18} color={isDark?'#4ade80':'#6ee7b7'}/>
@@ -477,7 +477,7 @@ const BuyerMarketplace = () => {
                 <h1 style={{ color:'#fff', margin:0, fontSize:28, fontWeight:800, lineHeight:1.25, marginBottom:6 }}>Fresh Produce, Delivered Fast</h1>
                 <p style={{ color: isDark?'#4d6655':'#a7f3d0', margin:0, fontSize:14 }}>Sourced directly from local farms · Seasonal & organic picks</p>
               </div>
-              <div style={{ display:'flex', gap:10, flex:1, maxWidth:520, minWidth:280 }}>
+              <div className="marketplace-search-wrap" style={{ display:'flex', gap:10, flex:1, maxWidth:520, minWidth:0, width:'100%' }}>
                 <div style={{ flex:1, position:'relative' }}>
                   <Search size={16} color={isDark?'#4ade80':'#6ee7b7'} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}/>
                   <input
@@ -501,7 +501,7 @@ const BuyerMarketplace = () => {
           </div>
 
           {/* ── Category pills ───────────────────────────────────── */}
-          <div style={{ display:'flex', gap:10, marginBottom:24, flexWrap:'wrap', alignItems:'center' }}>
+          <div className="marketplace-filters" style={{ display:'flex', gap:10, marginBottom:24, flexWrap:'wrap', alignItems:'center' }}>
             <button
               onClick={()=>setSelectedCategory('')}
               style={{
@@ -532,7 +532,7 @@ const BuyerMarketplace = () => {
               );
             })}
 
-            <div style={{ marginLeft:'auto', display:'flex', gap:8, alignItems:'center' }}>
+            <div className="marketplace-sort" style={{ marginLeft:'auto', display:'flex', gap:8, alignItems:'center' }}>
               <SlidersHorizontal size={15} color={t.textDisabled}/>
               <select
                 value={sortBy}
